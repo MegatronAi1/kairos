@@ -1,14 +1,14 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { FileSpreadsheet, FileText, Info, Loader2 } from "lucide-react";
+import { ArrowDownRight, ChevronDown, FileSpreadsheet, FileText, Info, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { Page, PageHeader, SectionTitle, StatTile } from "@/components/layout";
+import { Page, PageHeader, SectionTitle } from "@/components/layout";
 import { ErrorState, Panel, ProvenanceChip, Skeleton } from "@/components/primitives";
 import { api, downloadImpact, type Impact, type ImpactPeriod, type ImpactRow } from "@/lib/api/client";
 import type { Provenance } from "@/lib/api/types";
 
-import { PeriodLines, PlantBars, StackedBars, TipRow } from "./charts";
+import { PeriodLines, PlantBars, ShareBar, Sparkline, StackedBars, TipRow } from "./charts";
 
 type Currency = "INR" | "USD";
 
@@ -93,7 +93,7 @@ function ExportButton({ ext, period, plant }: { ext: "xlsx" | "pdf"; period: Imp
           setBusy(false);
         }
       }}
-      className="inline-flex items-center gap-2 rounded-control border border-border-strong bg-bg-surface px-3 py-2 text-sm font-medium hover:bg-bg-elevated disabled:opacity-60"
+      className="inline-flex items-center gap-1.5 rounded-control border border-border-strong bg-bg-surface px-3 py-1.5 text-sm font-medium hover:bg-bg-elevated disabled:opacity-60"
       title={failed ? "Export failed, try again" : `Download ${ext === "xlsx" ? "Excel" : "PDF"} report`}
     >
       {busy ? <Loader2 size={16} className="animate-spin" aria-hidden /> : <Icon size={16} aria-hidden />}
@@ -116,70 +116,57 @@ export default function ImpactPage() {
     placeholderData: keepPreviousData,
     staleTime: 5 * 60_000,
   });
+  // Monthly series for the hero and tile sparklines, whatever period the charts show.
+  const monthly = useQuery({
+    queryKey: ["impact", "month", plant],
+    queryFn: () => api.impact("month", plant),
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60_000,
+  });
 
   return (
     <Page wide>
       <PageHeader
         eyebrow="Impact"
         title="What Kairos saves"
-        subtitle="Money, energy and raw material saved across the plants, month by month. Plant history is simulated; the improvement rates are Kairos's measured results on held-out batches."
-        actions={
-          <>
-            <ExportButton ext="xlsx" period={period} plant={plant} />
-            <ExportButton ext="pdf" period={period} plant={plant} />
-          </>
-        }
+        subtitle="Money, energy and raw material saved across the plants. Plant history is simulated; the improvement rates are Kairos's measured results on held-out batches."
       />
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="sticky top-0 z-20 -mx-4 flex flex-wrap items-center gap-2 border-b border-border-subtle bg-bg-base/85 px-4 py-2.5 backdrop-blur md:-mx-8 md:px-8">
         <Segmented value={period} options={PERIODS} onChange={setPeriod} label="Period" />
-        <label className="flex items-center gap-2 text-sm">
-          <span className="text-text-secondary">Plant</span>
-          <select
-            value={plant}
-            onChange={(e) => setPlant(e.target.value)}
-            className="rounded-control border border-border-strong bg-bg-surface px-3 py-2 text-sm text-text-primary"
-          >
-            <option value="all">All plants</option>
-            {q.data?.by_plant.map((p) => (
-              <option key={p.plant_id} value={p.plant_id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <select
+          value={plant}
+          onChange={(e) => setPlant(e.target.value)}
+          aria-label="Plant"
+          className="rounded-control border border-border-strong bg-bg-surface px-3 py-2 text-sm text-text-primary"
+        >
+          <option value="all">All plants</option>
+          {q.data?.by_plant.map((p) => (
+            <option key={p.plant_id} value={p.plant_id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
         <Segmented
           value={currency}
           options={[
-            { id: "INR", label: "₹ INR" },
-            { id: "USD", label: "$ USD" },
+            { id: "INR", label: "₹" },
+            { id: "USD", label: "$" },
           ]}
           onChange={setCurrency}
           label="Currency"
         />
         {q.isFetching && !q.isLoading && <Loader2 size={16} className="animate-spin text-text-muted" aria-label="Updating" />}
-      </div>
-      <div
-        className="flex items-start gap-3 rounded-card border px-4 py-3 text-sm"
-        style={{
-          borderColor: "color-mix(in srgb, var(--color-state-watch) 45%, transparent)",
-          background: "color-mix(in srgb, var(--color-state-watch) 8%, transparent)",
-        }}
-      >
-        <Info size={18} className="mt-0.5 shrink-0" style={{ color: "var(--color-state-watch)" }} aria-hidden />
-        <p className="text-text-secondary">
-          <span className="font-semibold text-text-primary">Plant financials are simulated for this demo.</span> Reduction
-          rates come from Kairos evaluation on held-out batches (
-          <Link to="/app/evidence" className="text-accent-500 underline-offset-2 hover:underline">
-            Evidence page
-          </Link>
-          ). Assumptions are listed below; with a plant's own ledger the same model uses its real numbers.
-        </p>
+        <div className="ml-auto flex items-center gap-2">
+          <ExportButton ext="xlsx" period={period} plant={plant} />
+          <ExportButton ext="pdf" period={period} plant={plant} />
+        </div>
       </div>
       {q.isLoading ? (
         <div className="space-y-4">
+          <Skeleton className="h-52" />
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {[0, 1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-24" />
+              <Skeleton key={i} className="h-32" />
             ))}
           </div>
           <Skeleton className="h-80" />
@@ -189,20 +176,54 @@ export default function ImpactPage() {
           <ErrorState title="Impact data unavailable" message="The server did not return impact figures." onRetry={() => void q.refetch()} />
         </Panel>
       ) : (
-        <ImpactBody data={q.data} currency={currency} period={period} plant={plant} onPlant={setPlant} />
+        <ImpactBody data={q.data} months={monthly.data?.series ?? []} currency={currency} period={period} plant={plant} onPlant={setPlant} />
       )}
     </Page>
   );
 }
 
+function Delta({ from, to, label, format }: { from: number; to: number; label: string; format: (v: number) => string }) {
+  const change = from > 0 ? (to - from) / from : 0;
+  return (
+    <div className="min-w-0">
+      <div className="flex items-center gap-1 text-lg font-semibold" style={{ color: "var(--color-state-healthy)" }}>
+        <ArrowDownRight size={18} aria-hidden />
+        <span className="display-num">{Math.abs(Math.round(change * 100))}%</span>
+      </div>
+      <div className="truncate text-xs text-text-secondary">{label}</div>
+      <div className="num truncate text-xs text-text-muted">
+        {format(from)} → {format(to)}
+      </div>
+    </div>
+  );
+}
+
+function KpiTile({ label, value, sub, color, trend }: { label: string; value: string; sub: string; color: string; trend: number[] }) {
+  return (
+    <div className="flex flex-col rounded-card border border-border-subtle bg-bg-surface p-4">
+      <div className="flex items-center gap-2 text-xs font-medium text-text-secondary">
+        <span className="h-2 w-2 rounded-full" style={{ background: color }} aria-hidden />
+        {label}
+      </div>
+      <div className="display-num mt-1.5 text-2xl font-semibold text-text-primary">{value}</div>
+      <div className="mt-0.5 line-clamp-2 min-h-[2rem] text-xs text-text-muted">{sub}</div>
+      <div className="mt-2">
+        <Sparkline values={trend} color={color} height={34} />
+      </div>
+    </div>
+  );
+}
+
 function ImpactBody({
   data,
+  months,
   currency,
   period,
   plant,
   onPlant,
 }: {
   data: Impact;
+  months: ImpactRow[];
   currency: Currency;
   period: ImpactPeriod;
   plant: string;
@@ -218,75 +239,114 @@ function ImpactBody({
     let acc = 0;
     return data.series.map((r) => (acc += r.money_saved_inr));
   }, [data.series]);
+  const live = useMemo(() => months.filter((m) => m.period >= data.kairos_live_from), [months, data.kairos_live_from]);
+  const liveCum = useMemo(() => {
+    let acc = 0;
+    return live.map((r) => (acc += r.money_saved_inr));
+  }, [live]);
   const scope = plant === "all" ? "all plants" : (data.by_plant.find((p) => p.plant_id === plant)?.name ?? plant);
   const measured = data.provenance.measured_rates;
+  const per = period;
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile
-          label="Money saved, last 12 months"
+      {/* Hero: the one number, what changed, and where it comes from */}
+      <section
+        className="relative overflow-hidden rounded-card border border-border-subtle p-5 md:p-7"
+        style={{
+          background:
+            "linear-gradient(135deg, color-mix(in srgb, var(--color-accent-500) 14%, var(--color-bg-surface)), var(--color-bg-surface) 62%)",
+        }}
+      >
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-12">
+          <div className="min-w-0">
+            <div className="eyebrow">Saved in the last 12 months · {scope}</div>
+            <div className="display-num mt-2 text-4xl font-semibold leading-none tracking-tight text-text-primary sm:text-5xl md:text-6xl">
+              {money(t.money_saved_inr)}
+            </div>
+            <div className="mt-2 text-sm text-text-secondary">
+              {money(t.money_saved_inr / 12)} a month on average since Kairos went live in {monthName(data.kairos_live_from)}
+            </div>
+            <div className="mt-5 max-w-md">
+              <Sparkline values={liveCum.length ? liveCum : cumulative} color="var(--color-accent-500)" height={56} />
+              <div className="mt-1 text-[11px] text-text-muted">Cumulative savings since go-live</div>
+            </div>
+          </div>
+          <div className="min-w-0 space-y-5">
+            <div>
+              <div className="mb-2.5 text-xs font-medium text-text-secondary">Where the savings come from</div>
+              <ShareBar
+                format={money}
+                parts={SOURCES.map((src) => ({
+                  label: src.label,
+                  color: src.color,
+                  value: t.breakdown_inr[src.key as keyof ImpactRow["breakdown_inr"]],
+                }))}
+              />
+            </div>
+            <div className="border-t border-border-subtle pt-4">
+              <div className="mb-2.5 text-xs font-medium text-text-secondary">Versus the year before Kairos</div>
+              <div className="grid grid-cols-2 gap-4">
+                <Delta from={b.failed_actual} to={t.failed_actual} label="failed batches" format={(v) => v.toLocaleString("en-US")} />
+                <Delta from={t.energy_kwh_baseline} to={t.energy_kwh_actual} label="agitation + aeration energy" format={mwh} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiTile
+          label="Money saved"
           value={money(t.money_saved_inr)}
-          tone="var(--color-chart-series1)"
-          sub={`${money(t.money_saved_inr / 12)} per month on average · ${scope}`}
+          sub={`last 12 months · ${scope}`}
+          color="var(--color-accent-500)"
+          trend={live.map((m) => m.money_saved_inr)}
         />
-        <StatTile
+        <KpiTile
           label="Energy saved"
           value={mwh(t.energy_saved_kwh)}
-          tone="var(--color-chart-series2)"
           sub={`${pct(t.energy_saved_kwh, t.energy_kwh_baseline)} of agitation + aeration · ${tonnes(t.co2_saved_kg)} CO₂ avoided`}
+          color="var(--color-chart-series2)"
+          trend={live.map((m) => m.energy_saved_kwh)}
         />
-        <StatTile
-          label="Feedstock saved"
+        <KpiTile
+          label="Raw material saved"
           value={tonnes(t.feedstock_saved_kg)}
-          tone="var(--color-chart-series3)"
-          sub="sugar not wasted in failed batches + tighter feeding"
+          sub="sugar feedstock not wasted in failed batches + tighter feeding"
+          color="var(--color-chart-series3)"
+          trend={live.map((m) => m.feedstock_saved_kg)}
         />
-        <StatTile
+        <KpiTile
           label="Batches rescued"
           value={t.batches_rescued.toLocaleString("en-US")}
-          sub={`failed batches ${b.failed_actual} → ${t.failed_actual} year on year (${t.batches.toLocaleString("en-US")} run)`}
+          sub={`of ${t.batches.toLocaleString("en-US")} batches run in the last 12 months`}
+          color="var(--color-chart-series1)"
+          trend={live.map((m) => m.batches_rescued)}
         />
       </div>
 
-      <Panel className="p-4 md:p-5">
-        <SectionTitle aside={`${currency} per ${period} · Kairos live from ${monthName(data.kairos_live_from)}`}>Savings by source</SectionTitle>
-        <StackedBars
-          labels={labels}
-          keys={SOURCES}
-          rows={breakdownRows(data.series)}
-          format={money}
-          liveIndex={liveIndex}
-          yLabel="Money saved"
-          height={320}
-        />
-        <p className="mt-2 text-xs text-text-muted">
+      <Panel className="p-4 md:p-6">
+        <SectionTitle aside={`${currency} per ${per}`}>Savings by source</SectionTitle>
+        <StackedBars labels={labels} keys={SOURCES} rows={breakdownRows(data.series)} format={money} liveIndex={liveIndex} yLabel="Money saved" height={320} />
+        <p className="mt-3 text-xs text-text-muted">
           Before go-live Kairos saves nothing by construction; adoption ramps 30% → 60% → 90% of batches over the first three months.
         </p>
       </Panel>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel className="p-4 md:p-5">
-          <SectionTitle aside={currency}>Cumulative savings</SectionTitle>
+        <Panel className="p-4 md:p-6">
+          <SectionTitle aside={`MWh per ${per}`}>Energy consumption</SectionTitle>
           <PeriodLines
             labels={labels}
-            legend={false}
-            series={[{ key: "cum", label: "Cumulative", color: "var(--color-chart-series1)", values: cumulative, area: true }]}
-            format={money}
-            yLabel="Cumulative money saved"
-            extraTip={(i) => <TipRow label="This period" value={money(data.series[i]!.money_saved_inr)} />}
-          />
-        </Panel>
-        <Panel className="p-4 md:p-5">
-          <SectionTitle aside="agitation + aeration, MWh">Energy consumption</SectionTitle>
-          <PeriodLines
-            labels={labels}
+            liveIndex={liveIndex}
             series={[
               { key: "base", label: "Without Kairos", color: "var(--color-chart-reference)", values: data.series.map((r) => r.energy_kwh_baseline / 1000), dashed: true },
               { key: "act", label: "With Kairos", color: "var(--color-chart-series2)", values: data.series.map((r) => r.energy_kwh_actual / 1000) },
             ]}
-            format={(v) => `${Math.round(v).toLocaleString("en-US")}`}
+            format={(v) => Math.round(v).toLocaleString("en-US")}
             yLabel="Energy consumption, MWh"
+            height={280}
             extraTip={(i) => (
               <>
                 <TipRow label="Saved" value={mwh(data.series[i]!.energy_saved_kwh)} strong />
@@ -295,29 +355,29 @@ function ImpactBody({
             )}
           />
         </Panel>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Panel className="p-4 md:p-5">
-          <SectionTitle aside="tonnes of sugar feedstock">Raw material saved</SectionTitle>
-          <PeriodLines
+        <Panel className="p-4 md:p-6">
+          <SectionTitle aside={`tonnes of sugar feedstock per ${per}`}>Raw material saved</SectionTitle>
+          <StackedBars
             labels={labels}
-            series={[
-              { key: "feed", label: "Feedstock saved", color: "var(--color-chart-series3)", values: data.series.map((r) => r.feedstock_saved_kg / 1000), area: true },
-            ]}
-            legend={false}
-            format={(v) => `${v.toLocaleString("en-US", { maximumFractionDigits: 0 })} t`}
+            keys={[{ key: "feed", label: "Feedstock saved", color: "var(--color-chart-series3)" }]}
+            rows={data.series.map((r) => ({ feed: r.feedstock_saved_kg / 1000 }))}
+            format={(v) => `${v.toLocaleString("en-US", { maximumFractionDigits: v < 10 ? 1 : 0 })} t`}
+            liveIndex={liveIndex}
             yLabel="Feedstock saved, tonnes"
+            height={280}
             extraTip={(i) => (
               <>
                 <TipRow label="Batches rescued" value={String(data.series[i]!.batches_rescued)} />
                 <TipRow label="Failures without Kairos" value={String(data.series[i]!.failed_before_baseline)} />
-                <TipRow label="Failures" value={String(data.series[i]!.failed_actual)} />
+                <TipRow label="Failures with Kairos" value={String(data.series[i]!.failed_actual)} />
               </>
             )}
           />
         </Panel>
-        <Panel className="p-4 md:p-5">
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-5">
+        <Panel className="p-4 md:p-6 lg:col-span-3">
           <SectionTitle aside="last 12 months · click to filter">Savings by plant</SectionTitle>
           <PlantBars
             items={[...data.by_plant]
@@ -339,44 +399,73 @@ function ImpactBody({
             }}
           />
         </Panel>
+        <Panel className="p-4 md:p-6 lg:col-span-2">
+          <SectionTitle aside={currency}>Cumulative savings</SectionTitle>
+          <PeriodLines
+            labels={labels}
+            legend={false}
+            liveIndex={liveIndex}
+            series={[{ key: "cum", label: "Cumulative", color: "var(--color-accent-500)", values: cumulative, area: true }]}
+            format={money}
+            yLabel="Cumulative money saved"
+            height={330}
+            extraTip={(i) => <TipRow label={`This ${per}`} value={money(data.series[i]!.money_saved_inr)} />}
+          />
+        </Panel>
       </div>
 
-      <Panel className="p-4 md:p-5">
-        <SectionTitle aside={`measured rates: ${Math.round(measured.detection_rate * 100)}% faults caught · ${measured.energy_saving_pct}% energy`}>
-          Assumptions
-        </SectionTitle>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[520px] text-sm">
-            <thead>
-              <tr className="border-b border-border-subtle text-left text-xs text-text-muted">
-                <th className="py-2 pr-4 font-medium">Input</th>
-                <th className="py-2 pr-4 text-right font-medium">Value</th>
-                <th className="py-2 pr-4 font-medium">Unit</th>
-                <th className="py-2 font-medium">Source</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.provenance.assumptions.map((a) => (
-                <tr key={a.key} className="border-b border-border-subtle last:border-0">
-                  <td className="py-2 pr-4">{a.label}</td>
-                  <td className="num py-2 pr-4 text-right">{typeof a.value === "number" ? a.value.toLocaleString("en-US") : a.value}</td>
-                  <td className="py-2 pr-4 text-text-secondary">{a.unit}</td>
-                  <td className="py-2">
-                    <span className="inline-flex items-center gap-2 text-text-secondary">
-                      <ProvenanceChip
-                        provenance={(a.provenance === "simulated" ? "synthetic" : a.provenance) as Provenance}
-                        source={a.provenance === "measured" ? measured.source : undefined}
-                      />
-                      {a.provenance}
-                    </span>
-                  </td>
+      <details className="group rounded-card border border-border-subtle bg-bg-surface">
+        <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 md:px-6">
+          <Info size={16} className="shrink-0 text-text-muted" aria-hidden />
+          <span className="min-w-0 flex-1">
+            <span className="text-sm font-semibold">Method and assumptions</span>
+            <span className="ml-2 text-xs text-text-muted">
+              plant financials simulated · measured: {Math.round(measured.detection_rate * 100)}% faults caught, {measured.energy_saving_pct}% energy
+            </span>
+          </span>
+          <ChevronDown size={16} className="shrink-0 text-text-muted transition-transform group-open:rotate-180" aria-hidden />
+        </summary>
+        <div className="space-y-3 border-t border-border-subtle px-4 py-4 md:px-6">
+          <p className="text-sm text-text-secondary">
+            Plant financials are simulated for this demo. Reduction rates come from Kairos evaluation on held-out batches (
+            <Link to="/app/evidence" className="text-accent-500 underline-offset-2 hover:underline">
+              Evidence page
+            </Link>
+            ). With a plant&apos;s own ledger the same model uses its real numbers.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] text-sm">
+              <thead>
+                <tr className="border-b border-border-subtle text-left text-xs text-text-muted">
+                  <th className="py-2 pr-4 font-medium">Input</th>
+                  <th className="py-2 pr-4 text-right font-medium">Value</th>
+                  <th className="py-2 pr-4 font-medium">Unit</th>
+                  <th className="py-2 font-medium">Source</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data.provenance.assumptions.map((a) => (
+                  <tr key={a.key} className="border-b border-border-subtle last:border-0">
+                    <td className="py-2 pr-4">{a.label}</td>
+                    <td className="num py-2 pr-4 text-right">{typeof a.value === "number" ? a.value.toLocaleString("en-US") : a.value}</td>
+                    <td className="py-2 pr-4 text-text-secondary">{a.unit}</td>
+                    <td className="py-2">
+                      <span className="inline-flex items-center gap-2 text-text-secondary">
+                        <ProvenanceChip
+                          provenance={(a.provenance === "simulated" ? "synthetic" : a.provenance) as Provenance}
+                          source={a.provenance === "measured" ? measured.source : undefined}
+                        />
+                        {a.provenance}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs text-text-muted">{data.provenance.simulated}</p>
         </div>
-        <p className="mt-3 text-xs text-text-muted">{data.provenance.simulated}</p>
-      </Panel>
+      </details>
     </>
   );
 }

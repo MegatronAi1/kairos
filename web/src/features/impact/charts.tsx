@@ -1,9 +1,11 @@
 import { motion, useReducedMotion } from "framer-motion";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 
 /*
  * Impact charts. Same conventions as components/charts.tsx: token colours, one
  * y-axis, recessive grid, legend + direct labels, hover tooltip on every mark.
+ * Every chart measures its container and draws at real pixel size, so text stays
+ * 11-12px at any width (no viewBox scaling).
  */
 
 export interface StackKey {
@@ -12,7 +14,23 @@ export interface StackKey {
   color: string;
 }
 
-const M = { top: 22, right: 16, bottom: 34, left: 64 };
+const FONT = 11;
+const M = { top: 26, right: 12, bottom: 30, left: 60 };
+
+/** Container width in px, kept current with a ResizeObserver. */
+export function useWidth<T extends HTMLElement>(): [RefObject<T>, number] {
+  const ref = useRef<T>(null);
+  const [w, setW] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setW(el.clientWidth);
+    const ro = new ResizeObserver((entries) => setW(Math.round(entries[0]!.contentRect.width)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, w];
+}
 
 function niceStep(raw: number): number {
   const p = 10 ** Math.floor(Math.log10(Math.max(raw, 1e-9)));
@@ -27,9 +45,18 @@ function ticks(hi: number, n = 4): number[] {
   return out;
 }
 
+/** Period label shortened for narrow axes: "2025-11" -> "Nov 25", "2026-Q1" -> "Q1 26". */
+export function shortPeriod(p: string): string {
+  const [y, rest] = p.split("-");
+  if (!rest) return p;
+  if (rest.startsWith("Q")) return `${rest} ${y!.slice(2)}`;
+  const m = new Date(Number(y), Number(rest) - 1, 1).toLocaleString("en-US", { month: "short" });
+  return `${m} ${y!.slice(2)}`;
+}
+
 export function Legend({ items }: { items: { label: string; color: string; dashed?: boolean; swatch?: "bar" | "line" }[] }) {
   return (
-    <div className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-secondary">
+    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-secondary">
       {items.map((s) => (
         <span key={s.label} className="flex items-center gap-1.5">
           {s.swatch === "line" ? (
@@ -46,12 +73,12 @@ export function Legend({ items }: { items: { label: string; color: string; dashe
   );
 }
 
-function Tooltip({ leftPct, children }: { leftPct: number; children: ReactNode }) {
-  const right = leftPct > 60;
+function Tooltip({ x, width, children }: { x: number; width: number; children: ReactNode }) {
+  const flip = x > width / 2;
   return (
     <div
-      className="pointer-events-none absolute top-2 z-10 min-w-[180px] rounded-control border border-border-subtle bg-bg-elevated px-3 py-2 text-xs shadow-lg"
-      style={right ? { right: `${100 - leftPct + 2}%` } : { left: `${leftPct + 2}%` }}
+      className="pointer-events-none absolute top-8 z-10 min-w-[190px] rounded-control border border-border-subtle bg-bg-elevated px-3 py-2 text-xs shadow-lg"
+      style={flip ? { right: width - x + 12 } : { left: x + 12 }}
       role="status"
     >
       {children}
@@ -71,15 +98,53 @@ export function TipRow({ color, label, value, strong }: { color?: string; label:
   );
 }
 
-/** Stacked bars per period, with a marker at the go-live period. */
+function YGrid({ yt, ys, x0, x1, format }: { yt: number[]; ys: (v: number) => number; x0: number; x1: number; format: (v: number) => string }) {
+  return (
+    <>
+      {yt.map((t) => (
+        <g key={t}>
+          <line x1={x0} x2={x1} y1={ys(t)} y2={ys(t)} stroke="var(--color-chart-grid)" />
+          <text x={x0 - 8} y={ys(t) + 4} textAnchor="end" fontSize={FONT} fill="var(--color-text-muted)" className="num">
+            {format(t)}
+          </text>
+        </g>
+      ))}
+    </>
+  );
+}
+
+/** Show at most one axis label per `minPx` pixels. */
+function labelEvery(slotPx: number, minPx = 64): number {
+  return Math.max(1, Math.ceil(minPx / Math.max(slotPx, 1)));
+}
+
+function LiveMarker({ x, top, bottom, showBefore }: { x: number; top: number; bottom: number; showBefore: boolean }) {
+  return (
+    <g>
+      <line x1={x} x2={x} y1={top - 12} y2={bottom} stroke="var(--color-accent-500)" strokeDasharray="4 4" strokeWidth={1.5} />
+      <text x={x + 6} y={top - 12} fontSize={FONT} fontWeight={600} fill="var(--color-text-primary)">
+        Kairos live
+      </text>
+      {showBefore && (
+        <text x={x - 6} y={top - 12} fontSize={FONT} textAnchor="end" fill="var(--color-text-muted)">
+          before
+        </text>
+      )}
+    </g>
+  );
+}
+
+/** Bars per period (stacked when there is more than one key), with a go-live marker. */
 export function StackedBars({
   labels,
   keys,
   rows,
   format,
   liveIndex,
-  height = 300,
+  height = 320,
   yLabel,
+  legend = true,
+  extraTip,
 }: {
   labels: string[];
   keys: StackKey[];
@@ -88,111 +153,91 @@ export function StackedBars({
   liveIndex: number;
   height?: number;
   yLabel: string;
+  legend?: boolean;
+  extraTip?: (i: number) => ReactNode;
 }) {
   const reduce = useReducedMotion();
+  const [ref, width] = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
-  const width = 1000;
-  const iw = width - M.left - M.right;
+  const iw = Math.max(0, width - M.left - M.right);
   const ih = height - M.top - M.bottom;
   const totals = rows.map((r) => keys.reduce((s, k) => s + (r[k.key] ?? 0), 0));
-  const hi = Math.max(...totals, 1) * 1.1;
+  const hi = Math.max(...totals, 1e-9) * 1.12;
   const yt = useMemo(() => ticks(hi), [hi]);
   const ys = (v: number) => M.top + ih - (v / hi) * ih;
   const slot = iw / Math.max(labels.length, 1);
-  const bw = Math.min(56, slot * 0.68);
+  const bw = Math.max(4, Math.min(44, slot - 6));
   const xc = (i: number) => M.left + slot * i + slot / 2;
-  const every = Math.ceil(labels.length / 12);
+  const every = labelEvery(slot);
   const peak = totals.indexOf(Math.max(...totals));
 
   return (
-    <figure className="relative m-0">
-      <Legend items={keys.map((k) => ({ label: k.label, color: k.color }))} />
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full" role="img" aria-label={`${yLabel} per period, stacked by source`} onMouseLeave={() => setHover(null)}>
-        {yt.map((t) => (
-          <g key={t}>
-            <line x1={M.left} x2={M.left + iw} y1={ys(t)} y2={ys(t)} stroke="var(--color-chart-grid)" />
-            <text x={M.left - 8} y={ys(t) + 4} textAnchor="end" fontSize="11" fill="var(--color-text-muted)" className="num">
-              {format(t)}
-            </text>
-          </g>
-        ))}
-        {liveIndex >= 0 && liveIndex < labels.length && (
-          <g>
-            <line
-              x1={M.left + slot * liveIndex}
-              x2={M.left + slot * liveIndex}
-              y1={M.top - 8}
-              y2={M.top + ih}
-              stroke="var(--color-accent-500)"
-              strokeDasharray="4 4"
-              strokeWidth={1.5}
-            />
-            <text x={M.left + slot * liveIndex + 6} y={M.top - 8} fontSize="11" fontWeight={600} fill="var(--color-text-primary)">
-              Kairos goes live
-            </text>
-            {liveIndex > 0 && (
-              <text x={M.left + slot * liveIndex - 6} y={M.top - 8} fontSize="11" textAnchor="end" fill="var(--color-text-muted)">
-                before Kairos: no savings
-              </text>
+    <figure className="relative m-0 space-y-2">
+      {legend && keys.length > 1 && <Legend items={keys.map((k) => ({ label: k.label, color: k.color }))} />}
+      <div ref={ref} className="w-full" style={{ height }}>
+        {width > 0 && (
+          <svg width={width} height={height} role="img" aria-label={`${yLabel} per period`} onMouseLeave={() => setHover(null)}>
+            <YGrid yt={yt} ys={ys} x0={M.left} x1={M.left + iw} format={format} />
+            {liveIndex >= 0 && liveIndex < labels.length && (
+              <LiveMarker x={M.left + slot * liveIndex} top={M.top} bottom={M.top + ih} showBefore={liveIndex > 1 && slot * liveIndex > 70} />
             )}
-          </g>
+            {rows.map((r, i) => {
+              let acc = 0;
+              const segs = keys.map((k) => {
+                const v = r[k.key] ?? 0;
+                const y0 = ys(acc);
+                acc += v;
+                return { k, y: ys(acc), h: Math.max(0, y0 - ys(acc)) };
+              });
+              const last = [...segs].reverse().find((s) => s.h > 0);
+              return (
+                <g key={labels[i]} onMouseEnter={() => setHover(i)}>
+                  <rect x={xc(i) - slot / 2} y={M.top} width={slot} height={ih} fill={hover === i ? "var(--color-bg-elevated)" : "transparent"} opacity={0.7} />
+                  <motion.g
+                    initial={reduce ? false : { scaleY: 0 }}
+                    animate={{ scaleY: 1 }}
+                    transition={{ duration: 0.5, delay: reduce ? 0 : i * 0.015, ease: "easeOut" }}
+                    style={{ transformOrigin: `${xc(i)}px ${M.top + ih}px` }}
+                  >
+                    {segs.map((s) =>
+                      s.h > 0 ? (
+                        <rect
+                          key={s.k.key}
+                          x={xc(i) - bw / 2}
+                          y={s.y}
+                          width={bw}
+                          // 2px surface gap between stacked segments
+                          height={Math.max(0, s.h - (s === last ? 0 : 2))}
+                          rx={s === last ? Math.min(4, bw / 3) : 0}
+                          fill={s.k.color}
+                        />
+                      ) : null,
+                    )}
+                  </motion.g>
+                  {i === peak && totals[i]! > 0 && (
+                    <text x={xc(i)} y={ys(totals[i]!) - 6} textAnchor="middle" fontSize={FONT} fontWeight={600} fill="var(--color-text-secondary)" className="num">
+                      {format(totals[i]!)}
+                    </text>
+                  )}
+                  {(i % every === 0) && (
+                    <text x={xc(i)} y={M.top + ih + 18} textAnchor="middle" fontSize={FONT} fill="var(--color-text-muted)" className="num">
+                      {shortPeriod(labels[i]!)}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+            <line x1={M.left} x2={M.left + iw} y1={M.top + ih} y2={M.top + ih} stroke="var(--color-border-strong)" />
+          </svg>
         )}
-        {rows.map((r, i) => {
-          let acc = 0;
-          const segs = keys.map((k) => {
-            const v = r[k.key] ?? 0;
-            const y0 = ys(acc);
-            acc += v;
-            return { k, y: ys(acc), h: Math.max(0, y0 - ys(acc)) };
-          });
-          const last = [...segs].reverse().find((s) => s.h > 0);
-          return (
-            <g key={labels[i]} onMouseEnter={() => setHover(i)}>
-              <rect x={xc(i) - slot / 2} y={M.top} width={slot} height={ih} fill="transparent" />
-              {hover === i && <rect x={xc(i) - slot / 2} y={M.top} width={slot} height={ih} fill="var(--color-bg-elevated)" opacity={0.6} />}
-              <motion.g
-                initial={reduce ? false : { scaleY: 0 }}
-                animate={{ scaleY: 1 }}
-                transition={{ duration: 0.5, delay: reduce ? 0 : i * 0.02, ease: "easeOut" }}
-                style={{ transformOrigin: `${xc(i)}px ${M.top + ih}px`, transformBox: "view-box" }}
-              >
-                {segs.map((s) =>
-                  s.h > 0 ? (
-                    <rect
-                      key={s.k.key}
-                      x={xc(i) - bw / 2}
-                      y={s.y}
-                      width={bw}
-                      // 2px surface gap between stacked segments
-                      height={Math.max(0, s.h - (s === last ? 0 : 2))}
-                      rx={s === last ? 4 : 0}
-                      fill={s.k.color}
-                    />
-                  ) : null,
-                )}
-              </motion.g>
-              {(i === peak || (i === rows.length - 1 && rows.length - 1 - peak > 1)) && totals[i]! > 0 && (
-                <text x={xc(i)} y={ys(totals[i]!) - 6} textAnchor="middle" fontSize="11" fill="var(--color-text-secondary)" className="num">
-                  {format(totals[i]!)}
-                </text>
-              )}
-              {(i % every === 0 || (i === labels.length - 1 && i % every >= 2)) && (
-                <text x={xc(i)} y={M.top + ih + 18} textAnchor="middle" fontSize="11" fill="var(--color-text-muted)" className="num">
-                  {labels[i]}
-                </text>
-              )}
-            </g>
-          );
-        })}
-        <line x1={M.left} x2={M.left + iw} y1={M.top + ih} y2={M.top + ih} stroke="var(--color-border-strong)" />
-      </svg>
-      {hover !== null && (
-        <Tooltip leftPct={(xc(hover) / width) * 100}>
+      </div>
+      {hover !== null && width > 0 && (
+        <Tooltip x={xc(hover)} width={width}>
           <div className="mb-1 font-semibold text-text-primary">{labels[hover]}</div>
-          {[...keys].reverse().map((k) => (
-            <TipRow key={k.key} color={k.color} label={k.label} value={format(rows[hover]![k.key] ?? 0)} />
-          ))}
-          <TipRow label="Total" value={format(totals[hover]!)} strong />
+          {keys.length > 1 &&
+            [...keys].reverse().map((k) => <TipRow key={k.key} color={k.color} label={k.label} value={format(rows[hover]![k.key] ?? 0)} />)}
+          <TipRow label={keys.length > 1 ? "Total" : keys[0]!.label} value={format(totals[hover]!)} strong={keys.length > 1} />
+          {extraTip?.(hover)}
         </Tooltip>
       )}
     </figure>
@@ -217,6 +262,7 @@ export function PeriodLines({
   yLabel,
   extraTip,
   legend = true,
+  liveIndex = -1,
 }: {
   labels: string[];
   series: LineSeries[];
@@ -225,86 +271,96 @@ export function PeriodLines({
   yLabel: string;
   extraTip?: (i: number) => ReactNode;
   legend?: boolean;
+  liveIndex?: number;
 }) {
   const reduce = useReducedMotion();
+  const [ref, width] = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
-  const width = 1000;
-  const right = 110;
-  const iw = width - M.left - right;
+  // End labels need room when there are several series; a single series is named by the title.
+  const right = width < 480 || series.length < 2 ? 16 : 100;
+  const iw = Math.max(0, width - M.left - right);
   const ih = height - M.top - M.bottom;
-  const hi = Math.max(...series.flatMap((s) => s.values), 1) * 1.1;
-  const yt = useMemo(() => ticks(hi), [hi]);
-  const ys = (v: number) => M.top + ih - (v / hi) * ih;
+  const all = series.flatMap((s) => s.values);
+  const lo = Math.min(...all);
+  const hiRaw = Math.max(...all, 1e-9);
+  // Zero baseline unless every value sits far above it (then a tight range reads better).
+  const base = lo > hiRaw * 0.6 ? niceStep((lo * 0.9) / 2) * Math.floor((lo * 0.9) / niceStep((lo * 0.9) / 2)) : 0;
+  const hi = hiRaw * 1.06;
+  const yt = useMemo(() => {
+    const step = niceStep((hi - base) / 4);
+    const out: number[] = [];
+    for (let v = base; v <= hi + 1e-9; v += step) out.push(v);
+    return out;
+  }, [hi, base]);
+  const ys = (v: number) => M.top + ih - ((v - base) / (hi - base)) * ih;
   const n = labels.length;
   const xs = (i: number) => M.left + (n <= 1 ? iw / 2 : (i / (n - 1)) * iw);
-  const every = Math.ceil(n / 12);
+  const every = labelEvery(n > 1 ? iw / (n - 1) : iw);
 
   const ends = series.map((s) => ({ s, y: ys(s.values[n - 1] ?? 0) })).sort((a, b) => a.y - b.y);
   for (let i = 1; i < ends.length; i++) if (ends[i]!.y - ends[i - 1]!.y < 14) ends[i]!.y = ends[i - 1]!.y + 14;
 
   const onMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const px = ((e.clientX - rect.left) / rect.width) * width;
+    const px = e.clientX - e.currentTarget.getBoundingClientRect().left;
     const i = n <= 1 ? 0 : Math.round(((px - M.left) / iw) * (n - 1));
     setHover(Math.max(0, Math.min(n - 1, i)));
   };
 
   return (
-    <figure className="relative m-0">
+    <figure className="relative m-0 space-y-2">
       {legend && <Legend items={series.map((s) => ({ label: s.label, color: s.color, dashed: s.dashed, swatch: "line" as const }))} />}
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full" role="img" aria-label={yLabel} onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
-        {yt.map((t) => (
-          <g key={t}>
-            <line x1={M.left} x2={M.left + iw} y1={ys(t)} y2={ys(t)} stroke="var(--color-chart-grid)" />
-            <text x={M.left - 8} y={ys(t) + 4} textAnchor="end" fontSize="11" fill="var(--color-text-muted)" className="num">
-              {format(t)}
-            </text>
-          </g>
-        ))}
-        {labels.map((l, i) =>
-          i % every === 0 || (i === n - 1 && i % every >= 2) ? (
-            <text key={l} x={xs(i)} y={M.top + ih + 18} textAnchor="middle" fontSize="11" fill="var(--color-text-muted)" className="num">
-              {l}
-            </text>
-          ) : null,
+      <div ref={ref} className="w-full" style={{ height }}>
+        {width > 0 && (
+          <svg width={width} height={height} role="img" aria-label={yLabel} onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
+            <YGrid yt={yt} ys={ys} x0={M.left} x1={M.left + iw} format={format} />
+            {liveIndex > 0 && liveIndex < n && (
+              <LiveMarker x={xs(liveIndex)} top={M.top} bottom={M.top + ih} showBefore={false} />
+            )}
+            {labels.map((l, i) =>
+              i % every === 0 ? (
+                <text key={l} x={xs(i)} y={M.top + ih + 18} textAnchor="middle" fontSize={FONT} fill="var(--color-text-muted)" className="num">
+                  {shortPeriod(l)}
+                </text>
+              ) : null,
+            )}
+            {series.map((s) => {
+              const pts = s.values.map((v, i) => `${xs(i)},${ys(v)}`).join(" ");
+              return (
+                <g key={s.key}>
+                  {s.area && <polygon points={`${xs(0)},${ys(base)} ${pts} ${xs(n - 1)},${ys(base)}`} fill={s.color} opacity={0.12} />}
+                  <motion.polyline
+                    fill="none"
+                    stroke={s.color}
+                    strokeWidth={2}
+                    strokeDasharray={s.dashed ? "5 4" : undefined}
+                    strokeLinejoin="round"
+                    points={pts}
+                    initial={reduce || s.dashed ? false : { pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                  />
+                </g>
+              );
+            })}
+            {right > 40 &&
+              ends.map(({ s, y }) => (
+                <text key={s.key} x={M.left + iw + 8} y={y + 4} fontSize={FONT} fill="var(--color-text-secondary)">
+                  {s.label.length > 14 ? `${s.label.slice(0, 13)}…` : s.label}
+                </text>
+              ))}
+            {hover !== null && (
+              <g>
+                <line x1={xs(hover)} x2={xs(hover)} y1={M.top} y2={M.top + ih} stroke="var(--color-border-strong)" />
+                {series.map((s) => (
+                  <circle key={s.key} cx={xs(hover)} cy={ys(s.values[hover] ?? 0)} r={5} fill={s.color} stroke="var(--color-bg-surface)" strokeWidth={2} />
+                ))}
+              </g>
+            )}
+          </svg>
         )}
-        {series.map((s) => {
-          const pts = s.values.map((v, i) => `${xs(i)},${ys(v)}`).join(" ");
-          return (
-            <g key={s.key}>
-              {s.area && (
-                <polygon points={`${xs(0)},${ys(0)} ${pts} ${xs(n - 1)},${ys(0)}`} fill={s.color} opacity={0.12} />
-              )}
-              <motion.polyline
-                fill="none"
-                stroke={s.color}
-                strokeWidth={2}
-                strokeDasharray={s.dashed ? "5 4" : undefined}
-                strokeLinejoin="round"
-                points={pts}
-                initial={reduce || s.dashed ? false : { pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-              />
-            </g>
-          );
-        })}
-        {ends.map(({ s, y }) => (
-          <text key={s.key} x={M.left + iw + 8} y={y + 4} fontSize="11" fill="var(--color-text-secondary)">
-            {s.label.length > 16 ? `${s.label.slice(0, 15)}…` : s.label}
-          </text>
-        ))}
-        {hover !== null && (
-          <g>
-            <line x1={xs(hover)} x2={xs(hover)} y1={M.top} y2={M.top + ih} stroke="var(--color-border-strong)" />
-            {series.map((s) => (
-              <circle key={s.key} cx={xs(hover)} cy={ys(s.values[hover] ?? 0)} r={5} fill={s.color} stroke="var(--color-bg-surface)" strokeWidth={2} />
-            ))}
-          </g>
-        )}
-      </svg>
-      {hover !== null && (
-        <Tooltip leftPct={(xs(hover) / width) * 100}>
+      </div>
+      {hover !== null && width > 0 && (
+        <Tooltip x={xs(hover)} width={width}>
           <div className="mb-1 font-semibold text-text-primary">{labels[hover]}</div>
           {series.map((s) => (
             <TipRow key={s.key} color={s.color} label={s.label} value={format(s.values[hover] ?? 0)} />
@@ -316,7 +372,55 @@ export function PeriodLines({
   );
 }
 
-/** Horizontal bars for one measure across plants; hover shows every measure. */
+/** Tiny trend line for KPI tiles and the hero (no axes, no text). */
+export function Sparkline({ values, color, height = 36, area = true }: { values: number[]; color: string; height?: number; area?: boolean }) {
+  const [ref, width] = useWidth<HTMLDivElement>();
+  const n = values.length;
+  const hi = Math.max(...values, 1e-9);
+  const lo = Math.min(...values, 0);
+  const x = (i: number) => (n <= 1 ? width / 2 : (i / (n - 1)) * (width - 4) + 2);
+  const y = (v: number) => height - 3 - ((v - lo) / (hi - lo || 1)) * (height - 8);
+  const pts = values.map((v, i) => `${x(i)},${y(v)}`).join(" ");
+  return (
+    <div ref={ref} className="w-full" style={{ height }} aria-hidden>
+      {width > 0 && n > 0 && (
+        <svg width={width} height={height}>
+          {area && <polygon points={`${x(0)},${height} ${pts} ${x(n - 1)},${height}`} fill={color} opacity={0.14} />}
+          <polyline points={pts} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+          <circle cx={x(n - 1)} cy={y(values[n - 1]!)} r={3} fill={color} />
+        </svg>
+      )}
+    </div>
+  );
+}
+
+/** One proportional bar split into parts, with labels and shares underneath. */
+export function ShareBar({ parts, format }: { parts: { label: string; value: number; color: string }[]; format: (v: number) => string }) {
+  const total = parts.reduce((s, p) => s + p.value, 0) || 1;
+  return (
+    <div>
+      <div className="flex h-3 w-full gap-[2px] overflow-hidden rounded-full" role="img" aria-label="Share of savings by source">
+        {parts.map((p) => (
+          <span key={p.label} className="h-full first:rounded-l-full last:rounded-r-full" style={{ width: `${(p.value / total) * 100}%`, background: p.color }} />
+        ))}
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-3">
+        {parts.map((p) => (
+          <div key={p.label} className="min-w-0">
+            <div className="flex items-center gap-1.5 text-xs text-text-secondary">
+              <span className="h-2 w-2 shrink-0 rounded-sm" style={{ background: p.color }} aria-hidden />
+              <span className="truncate">{p.label}</span>
+            </div>
+            <div className="num mt-0.5 text-sm font-semibold text-text-primary">{Math.round((p.value / total) * 100)}%</div>
+            <div className="num truncate text-xs text-text-muted">{format(p.value)}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Ranked horizontal bars for one measure across plants; click filters, hover shows every measure. */
 export function PlantBars({
   items,
   format,
@@ -333,35 +437,44 @@ export function PlantBars({
   const reduce = useReducedMotion();
   const [hover, setHover] = useState<string | null>(null);
   const max = Math.max(...items.map((i) => i.value), 1e-9);
+  const total = items.reduce((s, i) => s + i.value, 0) || 1;
   return (
     <ul className="space-y-1">
       {items.map((it, idx) => {
         const active = selected === it.id;
+        const lit = active || hover === it.id;
+        const dim = (!!selected || !!hover) && !lit;
         return (
           <li key={it.id} className="relative" onMouseEnter={() => setHover(it.id)} onMouseLeave={() => setHover(null)}>
             <button
               type="button"
               onClick={() => onSelect?.(it.id)}
-              className={`grid w-full grid-cols-[minmax(0,150px)_1fr_auto] items-center gap-3 rounded-control px-2 py-1.5 text-left text-sm transition-colors hover:bg-bg-elevated sm:grid-cols-[minmax(0,220px)_1fr_auto] ${active ? "bg-bg-elevated" : ""}`}
+              className={`w-full rounded-control px-2.5 py-2 text-left transition-colors hover:bg-bg-elevated ${active ? "bg-bg-elevated ring-1 ring-accent-500" : ""}`}
               aria-pressed={active}
             >
-              <span className="min-w-0">
-                <span className="block truncate font-medium">{it.label}</span>
-                <span className="block truncate text-xs text-text-muted">{it.sub}</span>
-              </span>
-              <span className="h-3 overflow-hidden rounded-r bg-bg-inset">
-                <motion.span
-                  className="block h-full rounded-r"
-                  style={{ background: active || !selected ? "var(--color-chart-series1)" : "var(--color-chart-reference)" }}
+              <div className="flex items-baseline justify-between gap-3 text-sm">
+                <span className="min-w-0 truncate">
+                  <span className="num mr-2 text-xs text-text-muted">{idx + 1}</span>
+                  <span className="font-medium">{it.label}</span>
+                  <span className="ml-2 text-xs text-text-muted">{it.sub}</span>
+                </span>
+                <span className="shrink-0">
+                  <span className="num font-semibold">{format(it.value)}</span>
+                  <span className="num ml-2 inline-block w-9 text-right text-xs text-text-muted">{Math.round((it.value / total) * 100)}%</span>
+                </span>
+              </div>
+              <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-bg-inset">
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ background: "var(--color-chart-series1)", opacity: lit ? 1 : dim ? 0.35 : 0.72 }}
                   initial={reduce ? false : { width: 0 }}
                   animate={{ width: `${(it.value / max) * 100}%` }}
                   transition={{ duration: 0.6, delay: reduce ? 0 : idx * 0.04, ease: "easeOut" }}
                 />
-              </span>
-              <span className="num w-24 text-right">{format(it.value)}</span>
+              </div>
             </button>
             {hover === it.id && (
-              <div className="pointer-events-none absolute right-28 top-full z-10 -mt-1 min-w-[220px] rounded-control border border-border-subtle bg-bg-elevated px-3 py-2 text-xs shadow-lg" role="status">
+              <div className="pointer-events-none absolute right-2 top-full z-10 -mt-1 min-w-[220px] rounded-control border border-border-subtle bg-bg-elevated px-3 py-2 text-xs shadow-lg" role="status">
                 <div className="mb-1 font-semibold text-text-primary">{it.label}</div>
                 {detail(it.id)}
               </div>
