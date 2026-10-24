@@ -24,7 +24,9 @@ def kla_per_s(
         calibration
         * const("kla_coefficient")
         * np.power(np.clip(pv, 0.0, None), const("kla_power_exponent"))
-        * np.power(np.clip(np.asarray(vs_m_per_s, dtype=float), 0.0, None), const("kla_vs_exponent"))
+        * np.power(
+            np.clip(np.asarray(vs_m_per_s, dtype=float), 0.0, None), const("kla_vs_exponent")
+        )
     )
 
 
@@ -36,6 +38,8 @@ def o2_saturation_mg_l(temp_c: ArrayLike) -> ArrayLike:
 
 def otr_mg_l_h(kla_s: ArrayLike, c_star_mg_l: ArrayLike, do_mg_l: ArrayLike) -> ArrayLike:
     """OTR = kLa (C* - C), returned in mg O2 / (L h)."""
-    return np.asarray(kla_s, dtype=float) * 3600.0 * (
-        np.asarray(c_star_mg_l, dtype=float) - np.asarray(do_mg_l, dtype=float)
+    return (
+        np.asarray(kla_s, dtype=float)
+        * 3600.0
+        * (np.asarray(c_star_mg_l, dtype=float) - np.asarray(do_mg_l, dtype=float))
     )

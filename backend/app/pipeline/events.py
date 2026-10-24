@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from collections.abc import AsyncIterator
 from typing import Any
 
@@ -17,14 +18,11 @@ class EventBus:
     def publish(self, event: Event) -> None:
         for q in self._subscribers:
             if q.full() and event.get("type") == "tick":
-                try:
+                with contextlib.suppress(asyncio.QueueEmpty):
                     q.get_nowait()
-                except asyncio.QueueEmpty:
-                    pass
-            try:
+            # Never block the replay loop on a slow client.
+            with contextlib.suppress(asyncio.QueueFull):
                 q.put_nowait(event)
-            except asyncio.QueueFull:
-                pass  # never block the replay loop on a slow client
 
     async def subscribe(self) -> AsyncIterator[Event]:
         q: asyncio.Queue[Event] = asyncio.Queue(self._maxsize)

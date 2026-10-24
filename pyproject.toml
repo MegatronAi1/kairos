@@ -40,3 +40,14 @@ plugins = ["pydantic.mypy"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["ml/tests", "backend/tests"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "kairos_ml"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.params.Depends", "fastapi.params.Query"]
+
+[[tool.mypy.overrides]]
+# numpy ufunc results are typed Any; returning them from typed physics helpers is fine.
+module = ["kairos_ml.physics.*", "kairos_ml.features.*"]
+warn_return_any = false

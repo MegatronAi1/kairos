@@ -19,7 +19,9 @@ def test_ungassed_power_known_value() -> None:
 
 
 def test_power_scales_with_cube_of_speed() -> None:
-    assert float(ungassed_power_w(200.0, 0.5)) / float(ungassed_power_w(100.0, 0.5)) == pytest.approx(8.0)
+    assert float(ungassed_power_w(200.0, 0.5)) / float(
+        ungassed_power_w(100.0, 0.5)
+    ) == pytest.approx(8.0)
 
 
 def test_geometry_round_trip() -> None:

@@ -93,7 +93,12 @@ def load_process_frame(csv_path: Path | None = None, *, use_cache: bool = True) 
         diff = [(i, a, b) for i, (a, b) in enumerate(zip(header, expected, strict=False)) if a != b]
         raise ValueError(f"Header differs from frozen schema: {diff[:3]}")
     df = pd.read_csv(
-        csv_path, header=None, skiprows=1, usecols=range(N_PROCESS), names=list(KEYS), low_memory=False
+        csv_path,
+        header=None,
+        skiprows=1,
+        usecols=range(N_PROCESS),
+        names=list(KEYS),
+        low_memory=False,
     )
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
     df.to_parquet(PROCESS_PARQUET, index=False)

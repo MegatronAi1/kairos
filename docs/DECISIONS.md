@@ -22,3 +22,8 @@ Each entry: date/time (IST), decision, reason. Newest last.
 - **Flutter models are hand-written immutable classes, not freezed/json_serializable.** `freezed` and `json_serializable` failed to resolve against this SDK (pub fell back to pre-null-safety versions). Contract tests parse shared JSON fixtures instead.
 - **Fonts bundled as assets** (Inter and JetBrains Mono variable TTFs from google/fonts, OFL) so the phone works offline at the venue.
 - **Sole developer, one laptop.** Lanes run in sequence: thin end-to-end slice first, then deepen engines.
+- **Aeration `Fg` treated as m3/min** (assumed): the dataset labels it L/h, but 20-75 L/h is physically impossible for a ~100 m3 vessel, while 20-75 m3/min is 0.3-1 vvm, a typical range.
+- **DO % saturation uses C* scaled by head pressure** (Henry's law, gauge pressure assumed): gives 60-95% on normal batches, matching DO up to 16.5 mg/L.
+- **RQ from dataset OUR/CER is not physical** (median ~0.013 with the labelled units), so the units are likely scaled. RQ is used only as a ratio normalised to the golden trajectory (RQ index), never shown as a true molar RQ.
+- **kLa calibration multiplier pending:** raw van't Riet OTR is ~1000x the dataset OUR on the same units, so a fitted calibration (OTR ~= OUR in steady phases) is required before any OTR-vs-OUR constraint is used.
+- **Statistics-file yields are grams, not kg.** `Penicllin_yield_total (kg)` is ~2.8e6 for batch 1 while final P x V is ~2.3e6 g; values are divided by 1000 and reported in kg.

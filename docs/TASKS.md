@@ -8,7 +8,7 @@ Legend: [ ] todo, [~] in progress, [x] done
 - [ ] M3 Fault detector: MSPC + improved detector + persistence
 - [ ] M4 Explainability: SHAP drivers, interactions, alarm contributions
 - [~] M5 Energy model (power, kLa, OTR) + setpoint recommender
-- [ ] M6 Replay streamer + FastAPI + WebSocket
+- [~] M6 Replay streamer + FastAPI + WebSocket
 - [ ] M7 Claude agent on Bedrock (tool use, streaming, template fallback)
 - [ ] M8 Web Control Room: 3D twin, vitals, copilot, timeline
 - [ ] M9 Flutter Pager: reactor list, alarm takeover, alarm detail

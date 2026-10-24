@@ -60,7 +60,7 @@ def profile() -> str:
         f"- Columns: {len(header):,} (process: {len(header) - len(raman)}, Raman: {len(raman)})",
         f"- Raman wavenumber range: {raman[0]} .. {raman[-1]}" if raman else "- No Raman columns",
         f"- Batches: {summary.shape[0]}",
-        f"- Header quirk: the PAT_ref label has unquoted commas (header has 2 extra fields); repaired in `load.py`.",
+        "- Header quirk: the PAT_ref label has unquoted commas (header has 2 extra fields); repaired in `load.py`.",
         "",
         "## Process columns (canonical keys)",
         "",
