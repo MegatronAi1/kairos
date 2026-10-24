@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:kairos_pager/core/models/models.dart';
+import 'package:kairos_pager/core/models/process.dart';
 import 'package:kairos_pager/core/storage/pairing_store.dart';
 
 /// REST client for `/api/v1`. In demo mode calls succeed locally without a server.
@@ -51,6 +52,19 @@ class KairosApi {
       queryParameters: {'mode': rescue ? 'rescue' : 'energy'},
     );
     return EnergyRecommendation.fromJson(res.data!);
+  }
+
+  /// Alternative-protein process library. Empty in demo mode (no server to load it from).
+  Future<List<ProcessSummary>> processes() async {
+    if (pairing.demo) return const [];
+    final res = await _dio.get<Map<String, dynamic>>('processes');
+    final list = (res.data?['processes'] as List?) ?? const [];
+    return list.map((e) => ProcessSummary.fromJson(e as Json)).toList();
+  }
+
+  Future<ProcessDetail> process(String id) async {
+    final res = await _dio.get<Map<String, dynamic>>('processes/$id');
+    return ProcessDetail.fromJson(res.data!);
   }
 
   Future<void> acknowledge(String reactorId, {String by = 'pager'}) async {

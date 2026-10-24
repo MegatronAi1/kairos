@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kairos_pager/core/notifications/alarm_alerts.dart';
+import 'package:kairos_pager/core/process_providers.dart';
 import 'package:kairos_pager/core/providers.dart';
 import 'package:kairos_pager/core/theme/kairos_theme.dart';
 import 'package:kairos_pager/core/theme/theme_pref.dart';
 import 'package:kairos_pager/core/theme/tokens.dart';
 import 'package:kairos_pager/core/ws/event_source.dart';
+import 'package:kairos_pager/features/process/process_picker.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -42,6 +45,28 @@ class SettingsScreen extends ConsumerWidget {
           OutlinedButton(
             onPressed: () => ref.read(pairingProvider.notifier).unpair(),
             child: const Text('Disconnect and pair again'),
+          ),
+          const SizedBox(height: KSpace.s8),
+          Text('PROCESS', style: KText.overline()),
+          Builder(
+            builder: (context) {
+              final p = ref.watch(selectedProcessProvider);
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  p?.name ?? 'No process library',
+                  style: KText.ui(KSize.md, weight: FontWeight.w500),
+                ),
+                subtitle: Text(
+                  p == null ? 'Connect to a Kairos server to load it' : p.family.label,
+                  style: KText.ui(KSize.sm, color: KColors.textSecondary),
+                ),
+                trailing: p == null
+                    ? null
+                    : TextButton(onPressed: () => context.push('/process'), child: const Text('View')),
+                onTap: p == null ? null : () => showProcessPicker(context, ref),
+              );
+            },
           ),
           const SizedBox(height: KSpace.s8),
           Text('THEME', style: KText.overline()),

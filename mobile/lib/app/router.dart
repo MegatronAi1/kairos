@@ -7,6 +7,7 @@ import 'package:kairos_pager/features/alarm/alarm_takeover_screen.dart';
 import 'package:kairos_pager/features/chat/chat_screen.dart';
 import 'package:kairos_pager/features/pair/pair_screen.dart';
 import 'package:kairos_pager/features/plant/plant_screen.dart';
+import 'package:kairos_pager/features/process/process_screen.dart';
 import 'package:kairos_pager/features/reactor/reactor_detail_screen.dart';
 import 'package:kairos_pager/features/settings/settings_screen.dart';
 
@@ -41,6 +42,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, s) => ChatScreen(reactorId: s.uri.queryParameters['reactor']),
       ),
       GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
+      GoRoute(path: '/process', builder: (_, _) => const ProcessScreen()),
     ],
   );
   ref.onDispose(router.dispose);

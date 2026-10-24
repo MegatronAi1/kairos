@@ -7,6 +7,7 @@ import 'package:kairos_pager/core/theme/kairos_theme.dart';
 import 'package:kairos_pager/core/theme/tokens.dart';
 import 'package:kairos_pager/core/ws/event_source.dart';
 import 'package:kairos_pager/features/plant/reactor_card.dart';
+import 'package:kairos_pager/features/process/process_picker.dart';
 import 'package:kairos_pager/widgets/format.dart';
 import 'package:kairos_pager/widgets/states.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -46,7 +47,13 @@ class PlantScreen extends ConsumerWidget {
           itemCount: reactors.length + 1,
           separatorBuilder: (_, i) => SizedBox(height: i == 0 ? KSpace.s6 : KSpace.s4),
           itemBuilder: (context, i) => i == 0
-              ? _PlantSummary(reactors: reactors)
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const ProcessBanner(),
+                    _PlantSummary(reactors: reactors),
+                  ],
+                )
               : ReactorCard(
                   reactor: reactors[i - 1],
                   onTap: () => context.push('/reactor/${reactors[i - 1].id}'),

@@ -1,0 +1,41 @@
+{
+  "id": "mycoprotein",
+  "family": "biomass",
+  "name": "Mycoprotein",
+  "product": "Whole fungal biomass, textured into meat-alternative foods",
+  "example": {"company": "Quorn Foods (Marlow Foods)", "product_name": "Quorn mycoprotein", "url": "https://www.quorn.co.uk"},
+  "naming_note": null,
+  "organism": "Fusarium venenatum A3/5",
+  "organism_type": "filamentous fungus",
+  "reactor": "airlift",
+  "reactor_note": "Continuous pressure-cycle airlift loop",
+  "mode": "continuous",
+  "product_location": "biomass",
+  "carbon_source": "Glucose, kept in excess",
+  "nitrogen_source": "Ammonia",
+  "gases": ["air", "O2 supplement in the downcomer"],
+  "light": false,
+  "setpoints": {
+    "temp_c": {"min": 30, "max": 30, "provenance": "published", "source": "https://example.org/a"},
+    "ph": {"min": 6.0, "max": 6.0, "provenance": "published", "source": "https://example.org/a"},
+    "dilution_rate_per_h": {"min": 0.17, "max": 0.2, "provenance": "published", "source": "https://example.org/a"},
+    "do_pct": {"min": 20, "max": 40, "provenance": "assumed", "source": "Not published"}
+  },
+  "phases": [
+    {"name": "Inoculation and batch growth", "duration": "About 4 days", "goal": "Grow a small inoculum",
+     "controls": [{"param": "temperature", "action": "Hold about 30 °C"}]},
+    {"name": "Continuous growth", "duration": "Up to about 1,000 h", "goal": "Steady biomass output",
+     "controls": [{"param": "pH", "action": "Hold 6.0 with ammonia feed"}]}
+  ],
+  "control_loops": [{"measure": "pH probe", "actuator": "Ammonia feed", "purpose": "Hold pH 6 and supply nitrogen"}],
+  "critical_risks": ["Contamination over weeks of continuous running"],
+  "energy_hotspots": ["Air compression for the airlift"],
+  "kairos": {
+    "yield_signal": "Biomass productivity from dilution rate and off-gas CO2",
+    "fault_signatures": ["Rising CO2 with falling DO: oxygen limitation or contamination"],
+    "energy_levers": ["Air flow vs DO margin"],
+    "benchmark_fit": "high",
+    "benchmark_fit_why": "Both aerobic filamentous fungi limited by oxygen transfer"
+  },
+  "sources": [{"title": "Fungal biotechnology chapter", "url": "https://example.org/a"}]
+}

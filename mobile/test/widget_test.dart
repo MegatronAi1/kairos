@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kairos_pager/app/app.dart';
 import 'package:kairos_pager/core/models/models.dart';
+import 'package:kairos_pager/core/process_providers.dart';
 import 'package:kairos_pager/core/providers.dart';
 import 'package:kairos_pager/core/storage/pairing_store.dart';
 import 'package:kairos_pager/core/ws/event_source.dart';
@@ -50,6 +51,7 @@ Future<FakeSource> _pump(WidgetTester tester) async {
       overrides: [
         initialPairingProvider.overrideWithValue(const Pairing(serverUrl: 'http://test:8000', token: '')),
         eventSourceProvider.overrideWithValue(source),
+        processesProvider.overrideWith((ref) async => const []),
       ],
       child: const KairosApp(),
     ),
