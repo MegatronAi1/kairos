@@ -14,7 +14,7 @@ Each entry: date/time (IST), decision, reason. Newest last.
 - **Agitation is constant (100 rpm) in all batches.** The ML models cannot learn agitation effects; the energy recommender handles RPM through physics (power number, van't Riet kLa) only, and says so.
 - **`o2_offgas_frac` is a fraction (0.13-0.23)** despite the "%" label; unit recorded as fraction.
 - **Operating strategies:** batches 1-30 recipe-driven, 31-60 operator-controlled, 61-90 Raman/PAT-controlled, 91-100 faults (recipe-driven base). Splits stratify on these.
-- **Yield target candidate:** published `Penicllin_yield_total (kg)` from the statistics file (includes broth harvested mid-batch), cross-checked against final P x V. Final choice logged when the yield model lands.
+- **Yield target: total penicillin produced per batch (kg), derived from the time series** = sum over rows of P x broth removed (mid-batch harvests) + final P x V. The published statistics file correlates only r = 0.33 with these values (e.g. batch 2: 2326 vs 3588 kg) and appears to come from a different simulation run, so it is not used.
 - **No `tabulate` dependency:** markdown tables written by hand in `inspect.py`.
 - **`make` is not installed; `mingw32-make` is.** Makefile recipes only call `uv run` / `pnpm`, so they work under either.
 - **Unverified constants marked `assumed`** in `ml/config/constants.yaml`, including the India grid factor until verified against the current CEA database.
@@ -26,4 +26,7 @@ Each entry: date/time (IST), decision, reason. Newest last.
 - **DO % saturation uses C* scaled by head pressure** (Henry's law, gauge pressure assumed): gives 60-95% on normal batches, matching DO up to 16.5 mg/L.
 - **RQ from dataset OUR/CER is not physical** (median ~0.013 with the labelled units), so the units are likely scaled. RQ is used only as a ratio normalised to the golden trajectory (RQ index), never shown as a true molar RQ.
 - **kLa calibration multiplier pending:** raw van't Riet OTR is ~1000x the dataset OUR on the same units, so a fitted calibration (OTR ~= OUR in steady phases) is required before any OTR-vs-OUR constraint is used.
-- **Statistics-file yields are grams, not kg.** `Penicllin_yield_total (kg)` is ~2.8e6 for batch 1 while final P x V is ~2.3e6 g; values are divided by 1000 and reported in kg.
+- **Splits** (`ml/config/splits.json`, seed 20261024): per strategy 20 train / 5 val / 5 test-normal; fault batches 91-100 test only.
+- **Fault onsets** (`ml/config/fault_onsets.json`), independent of the detector: batches 91, 94, 95, 97, 99, 100 depart from the recipe's manipulated inputs at exactly 20.0 h (recipe batches 1-30 have identical input profiles), so onset is exact. 92, 93, 96, 98 have no input departure; onset is estimated as the earliest time a monitored variable stays > 4 sigma from the recipe-batch envelope for >= 2 h (92: pH 80.0 h, 93: temperature 70.6 h, 96: temperature 76.4 h, 98: pH 80.0 h). Labelled as estimates.
+- **Golden trajectory aligned on batch time** (0.2 h grid), not progress fraction: the recipe is time-indexed.
+- **Lab penicillin and biomass (offline, ~every 12 h) are used as features**, forward-filled from sample time only. Standard plant QC assays; the online simulator penicillin/substrate states are never features.

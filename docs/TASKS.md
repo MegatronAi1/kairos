@@ -3,10 +3,10 @@
 Legend: [ ] todo, [~] in progress, [x] done
 
 ## Must
-- [~] M1 Data ingestion and cleaning, batch-wise splits
-- [ ] M2 Early yield predictor + conformal intervals (p = 0.2/0.3/0.5/0.7)
-- [ ] M3 Fault detector: MSPC + improved detector + persistence
-- [ ] M4 Explainability: SHAP drivers, interactions, alarm contributions
+- [x] M1 Data ingestion and cleaning, batch-wise splits
+- [x] M2 Early yield predictor + conformal intervals (p = 0.2/0.3/0.5/0.7)
+- [x] M3 Fault detector: MSPC + improved detector + persistence
+- [~] M4 Explainability: SHAP drivers, interactions, alarm contributions
 - [~] M5 Energy model (power, kLa, OTR) + setpoint recommender
 - [~] M6 Replay streamer + FastAPI + WebSocket
 - [ ] M7 Claude agent on Bedrock (tool use, streaming, template fallback)

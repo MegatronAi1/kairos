@@ -1,0 +1,52 @@
+{
+  "91": {
+    "onset_h": 20.0,
+    "variable": "feed_lph",
+    "method": "exact: departs from recipe input"
+  },
+  "92": {
+    "onset_h": 80.0,
+    "variable": "ph",
+    "method": "estimated: >4 sigma from recipe envelope for >=2 h"
+  },
+  "93": {
+    "onset_h": 70.6,
+    "variable": "temp_k",
+    "method": "estimated: >4 sigma from recipe envelope for >=2 h"
+  },
+  "94": {
+    "onset_h": 20.0,
+    "variable": "aeration_lph",
+    "method": "exact: departs from recipe input"
+  },
+  "95": {
+    "onset_h": 20.0,
+    "variable": "feed_lph",
+    "method": "exact: departs from recipe input"
+  },
+  "96": {
+    "onset_h": 76.4,
+    "variable": "temp_k",
+    "method": "estimated: >4 sigma from recipe envelope for >=2 h"
+  },
+  "97": {
+    "onset_h": 20.0,
+    "variable": "feed_lph",
+    "method": "exact: departs from recipe input"
+  },
+  "98": {
+    "onset_h": 80.0,
+    "variable": "ph",
+    "method": "estimated: >4 sigma from recipe envelope for >=2 h"
+  },
+  "99": {
+    "onset_h": 20.0,
+    "variable": "aeration_lph",
+    "method": "exact: departs from recipe input"
+  },
+  "100": {
+    "onset_h": 20.0,
+    "variable": "aeration_lph",
+    "method": "exact: departs from recipe input"
+  }
+}
