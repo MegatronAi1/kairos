@@ -2,8 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:kairos_pager/core/models/models.dart';
 import 'package:kairos_pager/core/theme/tokens.dart';
 
+/// Display face for headings and hero numbers (Space Grotesk, OFL, bundled).
+const kDisplayFont = 'SpaceGrotesk';
+
 /// Text styles. Variable fonts need an explicit weight axis.
 abstract final class KText {
+  /// Headings, reactor IDs and hero numbers.
+  static TextStyle display(double size, {FontWeight weight = FontWeight.w600, Color? color}) => TextStyle(
+    fontFamily: kDisplayFont,
+    fontSize: size,
+    fontWeight: weight,
+    fontVariations: [FontVariation.weight(weight.value.toDouble())],
+    fontFeatures: const [FontFeature.tabularFigures()],
+    color: color ?? KColors.textPrimary,
+    height: 1.1,
+    letterSpacing: -0.3,
+  );
+
   static TextStyle ui(double size, {FontWeight weight = FontWeight.w400, Color? color}) => TextStyle(
     fontFamily: KFont.ui,
     fontSize: size,

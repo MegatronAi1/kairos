@@ -6,6 +6,7 @@ import 'package:kairos_pager/core/providers.dart';
 import 'package:kairos_pager/core/theme/kairos_theme.dart';
 import 'package:kairos_pager/core/theme/tokens.dart';
 import 'package:kairos_pager/widgets/format.dart';
+import 'package:kairos_pager/widgets/gauge.dart';
 import 'package:kairos_pager/widgets/ponr_countdown.dart';
 
 /// Full-screen alarm: title, reactor, countdown, the action in large type.
@@ -93,20 +94,24 @@ class _AlarmTakeoverScreenState extends ConsumerState<AlarmTakeoverScreen>
                         ],
                       ),
                       const SizedBox(height: KSpace.s6),
-                      Text(title, style: KText.ui(KSize.x3xl, weight: FontWeight.w600)),
+                      Text(title, style: KText.display(KSize.x3xl + 4)),
                       if (card?.summary != null) ...[
                         const SizedBox(height: KSpace.s2),
                         Text(card!.summary, style: KText.ui(KSize.lg, color: KColors.textSecondary)),
                       ],
                       const Spacer(),
-                      if (remaining != null)
-                        Center(
-                          child: PonrCountdown(remainingH: remaining, totalH: r?.lastAlarm?.ponrHours),
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          if (remaining != null)
+                            PonrCountdown(remainingH: remaining, totalH: r?.lastAlarm?.ponrHours, size: 150),
+                          Gauge(spec: GaugeSpec.doPct, value: r?.tick?.value('do_pct'), size: 128),
+                        ],
+                      ),
                       const Spacer(),
                       Text('Do this', style: KText.overline(color: KColors.accentX500)),
                       const SizedBox(height: KSpace.s1),
-                      Text(action, style: KText.ui(KSize.x2xl, weight: FontWeight.w500)),
+                      Text(action, style: KText.display(KSize.x2xl + 2, weight: FontWeight.w500)),
                       if (card != null && card.expectedEffect.isNotEmpty) ...[
                         const SizedBox(height: KSpace.s1),
                         Text(

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kairos_pager/core/models/models.dart';
 import 'package:kairos_pager/core/providers.dart';
 import 'package:kairos_pager/core/theme/kairos_theme.dart';
 import 'package:kairos_pager/core/theme/tokens.dart';
 import 'package:kairos_pager/core/ws/event_source.dart';
 import 'package:kairos_pager/features/plant/reactor_card.dart';
+import 'package:kairos_pager/widgets/format.dart';
 import 'package:kairos_pager/widgets/states.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -21,8 +23,8 @@ class PlantScreen extends ConsumerWidget {
     Widget body;
     if (reactors.isEmpty && status == ConnectionStatus.offline) {
       body = ErrorState(
-        title: 'Cannot reach Kairos',
-        message: 'Retrying automatically. Check the laptop is on the same Wi-Fi.',
+        title: "Can't reach the control room",
+        message: "We'll keep retrying. Make sure the laptop running Kairos is on and on the same network.",
         onRetry: () => ref.invalidate(eventSourceProvider),
       );
     } else if (reactors.isEmpty) {
@@ -40,20 +42,22 @@ class PlantScreen extends ConsumerWidget {
         color: KColors.accentX500,
         onRefresh: () async => ref.invalidate(eventSourceProvider),
         child: ListView.separated(
-          padding: const EdgeInsets.all(KSpace.s4),
-          itemCount: reactors.length,
-          separatorBuilder: (_, _) => const SizedBox(height: KSpace.s3),
-          itemBuilder: (context, i) => ReactorCard(
-            reactor: reactors[i],
-            onTap: () => context.push('/reactor/${reactors[i].id}'),
-          ),
+          padding: const EdgeInsets.fromLTRB(KSpace.s4, KSpace.s2, KSpace.s4, 96),
+          itemCount: reactors.length + 1,
+          separatorBuilder: (_, i) => SizedBox(height: i == 0 ? KSpace.s6 : KSpace.s4),
+          itemBuilder: (context, i) => i == 0
+              ? _PlantSummary(reactors: reactors)
+              : ReactorCard(
+                  reactor: reactors[i - 1],
+                  onTap: () => context.push('/reactor/${reactors[i - 1].id}'),
+                ),
         ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Plant'),
+        title: Text('Plant', style: KText.display(KSize.xl)),
         actions: [
           _ConnectionDot(status: status, label: pairing?.label ?? ''),
           IconButton(
@@ -108,4 +112,67 @@ class _ConnectionDot extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Headline for the whole plant: one sentence, state counts and total power.
+class _PlantSummary extends StatelessWidget {
+  const _PlantSummary({required this.reactors});
+
+  final List<ReactorView> reactors;
+
+  @override
+  Widget build(BuildContext context) {
+    final alarms = reactors.where((r) => r.state == HealthState.alarm && !r.acknowledged).length;
+    final watching = reactors.where((r) => r.state == HealthState.watch).length;
+    final n = reactors.length;
+    final headline = alarms > 0
+        ? '$alarms of $n reactors ${alarms == 1 ? 'needs' : 'need'} attention'
+        : watching > 0
+        ? '$watching of $n drifting, Kairos is watching'
+        : 'All $n reactors running smoothly';
+    final power = reactors.fold<double>(0, (a, r) => a + (r.tick?.derived['power_kw'] ?? 0));
+    final color = alarms > 0
+        ? KColors.stateAlarm
+        : watching > 0
+        ? KColors.stateWatch
+        : KColors.stateHealthy;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(headline, style: KText.display(KSize.x3xl - 4, color: color)),
+        const SizedBox(height: KSpace.s3),
+        Row(
+          children: [
+            for (final r in reactors) ...[
+              _Dot(color: stateColor(r.state), label: r.id),
+              const SizedBox(width: KSpace.s3),
+            ],
+            const Spacer(),
+            Icon(Icons.bolt_rounded, size: 16, color: KColors.textMuted),
+            Text(' ${fmt(power, decimals: 0)} kW', style: KText.mono(KSize.sm, color: KColors.textSecondary)),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _Dot extends StatelessWidget {
+  const _Dot({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Container(
+        width: 10,
+        height: 10,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      ),
+      const SizedBox(width: KSpace.s1),
+      Text(label, style: KText.mono(KSize.sm, color: KColors.textSecondary)),
+    ],
+  );
 }

@@ -66,14 +66,15 @@ void main() {
 
     source.emit(SnapshotFrame([_summary('R1', 22), _summary('R2', 91)]));
     await tester.pump();
-    expect(find.text('R1'), findsOneWidget);
-    expect(find.text('R2'), findsOneWidget);
+    expect(find.text('R1'), findsWidgets);
+    expect(find.text('R2'), findsWidgets);
     expect(find.text('Batch 91 · Fault batch'), findsOneWidget);
+    expect(find.text('All 2 reactors running smoothly'), findsOneWidget);
 
     source.emit(EventFrame(KEvent.fromJson(_fixture('tick.json'))!));
     await tester.pump();
-    expect(find.text('2706 kg'), findsOneWidget);
-    expect(find.text('1989 to 3423 · 88% of typical'), findsOneWidget);
+    expect(find.text('2,706 kg', findRichText: true), findsOneWidget);
+    expect(find.text('88% of typical'), findsOneWidget);
   });
 
   testWidgets('alarm event opens the takeover with the action, acknowledge closes it', (tester) async {

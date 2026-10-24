@@ -188,3 +188,17 @@ final reactorProvider = Provider.family<ReactorView?, String>((ref, id) => ref.w
 
 /// Unawaited helper for fire-and-forget UI calls.
 void fireAndForget(Future<void> f) => unawaited(f.catchError((Object _) {}));
+
+/// Energy recommendation per (reactor, 30 s bucket, state): refreshes every ~30 s of
+/// screen time and whenever the reactor changes state.
+final recommendationProvider =
+    FutureProvider.family<EnergyRecommendation?, ({String id, int bucket, HealthState state})>((
+      ref,
+      key,
+    ) async {
+      final api = ref.watch(apiProvider);
+      if (api == null) return null;
+      return api.recommendation(key.id, rescue: key.state == HealthState.alarm);
+    });
+
+int recommendationBucket() => DateTime.now().millisecondsSinceEpoch ~/ 30000;

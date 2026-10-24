@@ -160,11 +160,12 @@ class MockEventSource implements EventSource {
     final ts = DateTime.now().millisecondsSinceEpoch;
     for (final e in _slots.entries) {
       final id = e.key;
-      final drift = id == 'R2' ? math.max(0, _t - 60) : 0.0;
+      // Bounded drift: DO settles near 12% sat, forecast near 900 kg (physical ranges).
+      final drift = id == 'R2' ? math.min(22, math.max(0, _t - 60)) : 0.0;
       final doPct = 62 - drift * 2.2 + _noise(1.5);
       final score = (96 - drift * 4.5 + _noise(2)).clamp(5, 100).toDouble();
       final state = score < 45 ? HealthState.alarm : (score < 70 ? HealthState.watch : HealthState.normal);
-      final p50 = 3300.0 - drift * 45 + (id == 'R3' ? -500 : 0);
+      final p50 = 3300.0 - drift * 108 + (id == 'R3' ? -500 : 0);
       final progress = (_t / 230).clamp(0, 1).toDouble();
       final contributors = drift > 0
           ? const [

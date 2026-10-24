@@ -312,3 +312,66 @@ class ReactorSummary {
   final TickEvent? lastTick;
   final InsightEvent? lastInsight;
 }
+
+/// One agitation/aeration setting with its power and predicted DO.
+class SetpointOption {
+  const SetpointOption({
+    required this.rpm,
+    required this.aeration,
+    required this.powerKw,
+    required this.doPct,
+  });
+
+  factory SetpointOption.fromJson(Json j) => SetpointOption(
+    rpm: _d0(j['rpm']),
+    aeration: _d0(j['aeration']),
+    powerKw: _d0(j['power_kw']),
+    doPct: _d0(j['do_pct']),
+  );
+
+  final double rpm;
+  final double aeration;
+  final double powerKw;
+  final double doPct;
+}
+
+/// Energy-saving (or rescue) setpoints from GET /reactors/{id}/recommendation.
+class EnergyRecommendation {
+  const EnergyRecommendation({
+    required this.action,
+    required this.current,
+    required this.recommended,
+    required this.powerSavingKw,
+    required this.energyDeltaPct,
+    required this.kwhSavedRestOfBatch,
+    required this.co2SavedKg,
+    required this.inrSaved,
+    required this.targetDoPct,
+    this.demo = false,
+  });
+
+  factory EnergyRecommendation.fromJson(Json j) => EnergyRecommendation(
+    action: j['action'] as String? ?? '',
+    current: SetpointOption.fromJson(j['current'] as Json),
+    recommended: SetpointOption.fromJson(j['recommended'] as Json),
+    powerSavingKw: _d0(j['power_saving_kw']),
+    energyDeltaPct: _d0(j['energy_delta_pct']),
+    kwhSavedRestOfBatch: _d0(j['kwh_saved_rest_of_batch']),
+    co2SavedKg: _d0(j['co2_saved_kg']),
+    inrSaved: _d0(j['inr_saved']),
+    targetDoPct: _d0(j['target_do_pct']),
+  );
+
+  final String action;
+  final SetpointOption current;
+  final SetpointOption recommended;
+  final double powerSavingKw;
+  final double energyDeltaPct;
+  final double kwhSavedRestOfBatch;
+  final double co2SavedKg;
+  final double inrSaved;
+  final double targetDoPct;
+
+  /// True when produced by the offline demo source rather than the server.
+  final bool demo;
+}

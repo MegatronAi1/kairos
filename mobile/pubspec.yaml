@@ -35,3 +35,6 @@ flutter:
     - family: JetBrainsMono
       fonts:
         - asset: assets/fonts/JetBrainsMono.ttf
+    - family: SpaceGrotesk
+      fonts:
+        - asset: assets/fonts/SpaceGrotesk.ttf
