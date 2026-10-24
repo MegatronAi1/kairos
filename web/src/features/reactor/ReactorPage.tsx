@@ -106,6 +106,11 @@ export default function ReactorPage() {
             <div className="num text-2xl font-semibold" style={{ color: stateVar[h.state] }}>
               {Math.round(h.score)}
             </div>
+            {r.state === "alarm" && h.state !== "alarm" && (
+              <div className="mt-0.5 max-w-[11rem] text-xs text-text-secondary">
+                Detector reads {h.state === "normal" ? "normal" : "watch"} now. Alarm stays latched until acknowledged.
+              </div>
+            )}
           </div>
         )}
         <p className="pointer-events-none absolute bottom-3 right-4 text-xs text-text-muted">

@@ -1,7 +1,9 @@
 // Generate platform tokens from design/tokens.json (single source of truth).
 //   web/src/styles/tokens.css        CSS custom properties
 //   web/src/styles/tokens.preset.cjs Tailwind preset
-//   mobile/lib/core/theme/tokens.dart Dart constants
+//   mobile/lib/core/theme/tokens.dart Dart constants + dark/light KPalette
+// Themes: `themes.<name>.color` overrides base colours. Dark is the default;
+// web switches with :root[data-theme="light"], mobile with KColors.palette.
 // Zero dependencies (see docs/DECISIONS.md: replaces Style Dictionary).
 // Run: node design/build-tokens.mjs
 
@@ -18,7 +20,11 @@ function flatten(node, path = []) {
   if (node && typeof node === "object" && "value" in node) return [[path, node.value]];
   return Object.entries(node).flatMap(([k, v]) => flatten(v, [...path, k]));
 }
-const flat = flatten(tokens);
+const { themes = {}, ...base } = tokens;
+const flat = flatten(base);
+const lightFlat = flatten({ color: themes.light?.color ?? {} });
+const colorFlat = flat.filter(([p]) => p[0] === "color");
+const lightValue = (p) => lightFlat.find(([q]) => q.join("-") === p.join("-"))?.[1];
 
 function write(rel, text) {
   const file = join(root, rel);
@@ -33,7 +39,11 @@ const cssValue = (path, v) =>
 
 // --- CSS ---------------------------------------------------------------
 const cssVars = flat.map(([p, v]) => `  --${p.join("-")}: ${cssValue(p, v)};`).join("\n");
-write("web/src/styles/tokens.css", `/* ${HEADER} */\n:root {\n${cssVars}\n}\n`);
+const lightVars = lightFlat.map(([p, v]) => `  --${p.join("-")}: ${v};`).join("\n");
+write(
+  "web/src/styles/tokens.css",
+  `/* ${HEADER} */\n:root {\n${cssVars}\n}\n\n:root[data-theme="light"] {\n  color-scheme: light;\n${lightVars}\n}\n`,
+);
 
 // --- Tailwind preset -----------------------------------------------------
 const group = (prefix) =>
@@ -76,10 +86,21 @@ const dartColor = (hex) => {
 };
 
 const dart = [`// ${HEADER}`, "// ignore_for_file: public_member_api_docs", "", "import 'package:flutter/widgets.dart';", ""];
-dart.push("abstract final class KColors {");
-for (const [p, v] of flat.filter(([p]) => p[0] === "color")) {
-  dart.push(`  static const ${camel(p.slice(1))} = ${dartColor(v)};`);
-}
+const names = colorFlat.map(([p]) => camel(p.slice(1)));
+dart.push("/// One theme's colours. Generated for every theme in tokens.json.", "class KPalette {");
+dart.push(`  const KPalette({${names.map((n) => `required this.${n}`).join(", ")}});`, "");
+for (const n of names) dart.push(`  final Color ${n};`);
+const instance = (name, valueOf) => {
+  dart.push("", `  static const ${name} = KPalette(`);
+  colorFlat.forEach(([p, v], i) => dart.push(`    ${names[i]}: ${dartColor(valueOf(p) ?? v)},`));
+  dart.push("  );");
+};
+instance("dark", () => undefined);
+instance("light", lightValue);
+dart.push("}", "");
+dart.push("/// Active palette. The app rebuilds its tree when this changes (see KairosApp).", "abstract final class KColors {");
+dart.push("  static KPalette palette = KPalette.dark;");
+for (const n of names) dart.push(`  static Color get ${n} => palette.${n};`);
 dart.push("}", "", "abstract final class KSize {");
 for (const [p, v] of flat.filter(([p]) => p[0] === "font" && p[1] === "size")) {
   dart.push(`  static const double ${camel(p.slice(2))} = ${v};`);

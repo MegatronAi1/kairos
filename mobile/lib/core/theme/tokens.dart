@@ -3,32 +3,147 @@
 
 import 'package:flutter/widgets.dart';
 
+/// One theme's colours. Generated for every theme in tokens.json.
+class KPalette {
+  const KPalette({
+    required this.bgBase,
+    required this.bgSurface,
+    required this.bgElevated,
+    required this.bgInset,
+    required this.borderSubtle,
+    required this.borderStrong,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.textMuted,
+    required this.accentX500,
+    required this.accentX600,
+    required this.accentGlow,
+    required this.stateHealthy,
+    required this.stateWatch,
+    required this.stateAlarm,
+    required this.stateInfo,
+    required this.provenanceMeasured,
+    required this.provenancePublished,
+    required this.provenanceAssumed,
+    required this.provenanceSynthetic,
+    required this.chartSeries1,
+    required this.chartSeries2,
+    required this.chartSeries3,
+    required this.chartReference,
+    required this.chartGrid,
+  });
+
+  final Color bgBase;
+  final Color bgSurface;
+  final Color bgElevated;
+  final Color bgInset;
+  final Color borderSubtle;
+  final Color borderStrong;
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color textMuted;
+  final Color accentX500;
+  final Color accentX600;
+  final Color accentGlow;
+  final Color stateHealthy;
+  final Color stateWatch;
+  final Color stateAlarm;
+  final Color stateInfo;
+  final Color provenanceMeasured;
+  final Color provenancePublished;
+  final Color provenanceAssumed;
+  final Color provenanceSynthetic;
+  final Color chartSeries1;
+  final Color chartSeries2;
+  final Color chartSeries3;
+  final Color chartReference;
+  final Color chartGrid;
+
+  static const dark = KPalette(
+    bgBase: Color(0xFF0A0E13),
+    bgSurface: Color(0xFF11171F),
+    bgElevated: Color(0xFF18202A),
+    bgInset: Color(0xFF0D1218),
+    borderSubtle: Color(0xFF1F2933),
+    borderStrong: Color(0xFF2E3A47),
+    textPrimary: Color(0xFFE6EDF3),
+    textSecondary: Color(0xFF9AA6B2),
+    textMuted: Color(0xFF66727F),
+    accentX500: Color(0xFF2DD4BF),
+    accentX600: Color(0xFF14B8A6),
+    accentGlow: Color(0x292DD4BF),
+    stateHealthy: Color(0xFF34D399),
+    stateWatch: Color(0xFFF5A524),
+    stateAlarm: Color(0xFFF43F5E),
+    stateInfo: Color(0xFF60A5FA),
+    provenanceMeasured: Color(0xFF34D399),
+    provenancePublished: Color(0xFF60A5FA),
+    provenanceAssumed: Color(0xFFF5A524),
+    provenanceSynthetic: Color(0xFFA78BFA),
+    chartSeries1: Color(0xFF199E70),
+    chartSeries2: Color(0xFF3987E5),
+    chartSeries3: Color(0xFFD95926),
+    chartReference: Color(0xFF66727F),
+    chartGrid: Color(0xFF1F2933),
+  );
+
+  static const light = KPalette(
+    bgBase: Color(0xFFF5F7F9),
+    bgSurface: Color(0xFFFFFFFF),
+    bgElevated: Color(0xFFFFFFFF),
+    bgInset: Color(0xFFEDF1F4),
+    borderSubtle: Color(0xFFDCE2E8),
+    borderStrong: Color(0xFFBAC5CF),
+    textPrimary: Color(0xFF0E1620),
+    textSecondary: Color(0xFF46535F),
+    textMuted: Color(0xFF6A7682),
+    accentX500: Color(0xFF0D9488),
+    accentX600: Color(0xFF0F766E),
+    accentGlow: Color(0x1F0D9488),
+    stateHealthy: Color(0xFF059669),
+    stateWatch: Color(0xFFB45309),
+    stateAlarm: Color(0xFFDC2647),
+    stateInfo: Color(0xFF2563EB),
+    provenanceMeasured: Color(0xFF059669),
+    provenancePublished: Color(0xFF2563EB),
+    provenanceAssumed: Color(0xFFB45309),
+    provenanceSynthetic: Color(0xFF7C3AED),
+    chartSeries1: Color(0xFF1BAF7A),
+    chartSeries2: Color(0xFF2A78D6),
+    chartSeries3: Color(0xFFEB6834),
+    chartReference: Color(0xFF8794A0),
+    chartGrid: Color(0xFFE3E8ED),
+  );
+}
+
+/// Active palette. The app rebuilds its tree when this changes (see KairosApp).
 abstract final class KColors {
-  static const bgBase = Color(0xFF0A0E13);
-  static const bgSurface = Color(0xFF11171F);
-  static const bgElevated = Color(0xFF18202A);
-  static const bgInset = Color(0xFF0D1218);
-  static const borderSubtle = Color(0xFF1F2933);
-  static const borderStrong = Color(0xFF2E3A47);
-  static const textPrimary = Color(0xFFE6EDF3);
-  static const textSecondary = Color(0xFF9AA6B2);
-  static const textMuted = Color(0xFF66727F);
-  static const accentX500 = Color(0xFF2DD4BF);
-  static const accentX600 = Color(0xFF14B8A6);
-  static const accentGlow = Color(0x292DD4BF);
-  static const stateHealthy = Color(0xFF34D399);
-  static const stateWatch = Color(0xFFF5A524);
-  static const stateAlarm = Color(0xFFF43F5E);
-  static const stateInfo = Color(0xFF60A5FA);
-  static const provenanceMeasured = Color(0xFF34D399);
-  static const provenancePublished = Color(0xFF60A5FA);
-  static const provenanceAssumed = Color(0xFFF5A524);
-  static const provenanceSynthetic = Color(0xFFA78BFA);
-  static const chartSeries1 = Color(0xFF199E70);
-  static const chartSeries2 = Color(0xFF3987E5);
-  static const chartSeries3 = Color(0xFFD95926);
-  static const chartReference = Color(0xFF66727F);
-  static const chartGrid = Color(0xFF1F2933);
+  static KPalette palette = KPalette.dark;
+  static Color get bgBase => palette.bgBase;
+  static Color get bgSurface => palette.bgSurface;
+  static Color get bgElevated => palette.bgElevated;
+  static Color get bgInset => palette.bgInset;
+  static Color get borderSubtle => palette.borderSubtle;
+  static Color get borderStrong => palette.borderStrong;
+  static Color get textPrimary => palette.textPrimary;
+  static Color get textSecondary => palette.textSecondary;
+  static Color get textMuted => palette.textMuted;
+  static Color get accentX500 => palette.accentX500;
+  static Color get accentX600 => palette.accentX600;
+  static Color get accentGlow => palette.accentGlow;
+  static Color get stateHealthy => palette.stateHealthy;
+  static Color get stateWatch => palette.stateWatch;
+  static Color get stateAlarm => palette.stateAlarm;
+  static Color get stateInfo => palette.stateInfo;
+  static Color get provenanceMeasured => palette.provenanceMeasured;
+  static Color get provenancePublished => palette.provenancePublished;
+  static Color get provenanceAssumed => palette.provenanceAssumed;
+  static Color get provenanceSynthetic => palette.provenanceSynthetic;
+  static Color get chartSeries1 => palette.chartSeries1;
+  static Color get chartSeries2 => palette.chartSeries2;
+  static Color get chartSeries3 => palette.chartSeries3;
+  static Color get chartReference => palette.chartReference;
+  static Color get chartGrid => palette.chartGrid;
 }
 
 abstract final class KSize {

@@ -7,6 +7,8 @@ import 'package:kairos_pager/core/models/models.dart';
 import 'package:kairos_pager/core/notifications/alarm_alerts.dart';
 import 'package:kairos_pager/core/providers.dart';
 import 'package:kairos_pager/core/theme/kairos_theme.dart';
+import 'package:kairos_pager/core/theme/theme_pref.dart';
+import 'package:kairos_pager/core/theme/tokens.dart';
 
 class KairosApp extends ConsumerStatefulWidget {
   const KairosApp({super.key});
@@ -15,7 +17,7 @@ class KairosApp extends ConsumerStatefulWidget {
   ConsumerState<KairosApp> createState() => _KairosAppState();
 }
 
-class _KairosAppState extends ConsumerState<KairosApp> {
+class _KairosAppState extends ConsumerState<KairosApp> with WidgetsBindingObserver {
   late final AppLifecycleListener _lifecycle;
   bool _foreground = true;
   String? _showingAlarmFor;
@@ -23,6 +25,7 @@ class _KairosAppState extends ConsumerState<KairosApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _lifecycle = AppLifecycleListener(
       onStateChange: (s) => _foreground = s == AppLifecycleState.resumed,
     );
@@ -30,7 +33,11 @@ class _KairosAppState extends ConsumerState<KairosApp> {
   }
 
   @override
+  void didChangePlatformBrightness() => setState(() {});
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _lifecycle.dispose();
     super.dispose();
   }
@@ -70,12 +77,24 @@ class _KairosAppState extends ConsumerState<KairosApp> {
       })
       // Keep the reactor fold alive app-wide so no event is missed between screens.
       ..watch(reactorsProvider);
+    final mode = ref.watch(themeModeProvider);
+    final platform = WidgetsBinding.instance.platformDispatcher.platformBrightness;
+    final brightness = switch (mode) {
+      ThemeMode.light => Brightness.light,
+      ThemeMode.dark => Brightness.dark,
+      ThemeMode.system => platform,
+    };
+    // Widgets read KColors at build time; switching the palette and keying the app
+    // on brightness rebuilds every screen with the new colours.
+    KColors.palette = brightness == Brightness.light ? KPalette.light : KPalette.dark;
+    final theme = kairosTheme(brightness);
     return MaterialApp.router(
+      key: ValueKey(brightness),
       title: 'Kairos Pager',
       debugShowCheckedModeBanner: false,
-      theme: kairosTheme(),
-      darkTheme: kairosTheme(),
-      themeMode: ThemeMode.dark,
+      theme: theme,
+      darkTheme: theme,
+      themeMode: brightness == Brightness.light ? ThemeMode.light : ThemeMode.dark,
       routerConfig: ref.watch(routerProvider),
     );
   }

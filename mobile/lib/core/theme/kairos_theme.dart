@@ -51,8 +51,10 @@ Color provenanceColor(Provenance p) => switch (p) {
   Provenance.synthetic => KColors.provenanceSynthetic,
 };
 
-ThemeData kairosTheme() {
-  const scheme = ColorScheme.dark(
+/// Theme for the active palette (`KColors.palette`); call after switching palettes.
+ThemeData kairosTheme(Brightness brightness) {
+  final dark = brightness == Brightness.dark;
+  final scheme = (dark ? ColorScheme.dark : ColorScheme.light)(
     primary: KColors.accentX500,
     onPrimary: KColors.bgBase,
     secondary: KColors.accentX600,
@@ -62,7 +64,12 @@ ThemeData kairosTheme() {
     outline: KColors.borderStrong,
     outlineVariant: KColors.borderSubtle,
   );
-  final base = ThemeData(useMaterial3: true, colorScheme: scheme, fontFamily: KFont.ui);
+  final base = ThemeData(
+    useMaterial3: true,
+    brightness: brightness,
+    colorScheme: scheme,
+    fontFamily: KFont.ui,
+  );
   return base.copyWith(
     scaffoldBackgroundColor: KColors.bgBase,
     textTheme: base.textTheme.apply(bodyColor: KColors.textPrimary, displayColor: KColors.textPrimary),
@@ -72,29 +79,29 @@ ThemeData kairosTheme() {
       elevation: 0,
       titleTextStyle: KText.ui(KSize.lg, weight: FontWeight.w500),
     ),
-    dividerTheme: const DividerThemeData(color: KColors.borderSubtle, thickness: 1, space: 1),
-    cardTheme: const CardThemeData(
+    dividerTheme: DividerThemeData(color: KColors.borderSubtle, thickness: 1, space: 1),
+    cardTheme: CardThemeData(
       color: KColors.bgSurface,
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(KRadius.card)),
+        borderRadius: const BorderRadius.all(Radius.circular(KRadius.card)),
         side: BorderSide(color: KColors.borderSubtle),
       ),
     ),
-    inputDecorationTheme: const InputDecorationTheme(
+    inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: KColors.bgInset,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(KRadius.control)),
+        borderRadius: const BorderRadius.all(Radius.circular(KRadius.control)),
         borderSide: BorderSide(color: KColors.borderSubtle),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(KRadius.control)),
+        borderRadius: const BorderRadius.all(Radius.circular(KRadius.control)),
         borderSide: BorderSide(color: KColors.borderSubtle),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(KRadius.control)),
+        borderRadius: const BorderRadius.all(Radius.circular(KRadius.control)),
         borderSide: BorderSide(color: KColors.accentX500, width: 1.5),
       ),
       labelStyle: TextStyle(color: KColors.textSecondary),
@@ -113,7 +120,7 @@ ThemeData kairosTheme() {
       style: OutlinedButton.styleFrom(
         foregroundColor: KColors.textPrimary,
         minimumSize: const Size.fromHeight(48),
-        side: const BorderSide(color: KColors.borderStrong),
+        side: BorderSide(color: KColors.borderStrong),
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(KRadius.control))),
         textStyle: KText.ui(KSize.md, weight: FontWeight.w500),
       ),

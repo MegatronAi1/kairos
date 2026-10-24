@@ -5,6 +5,7 @@ import * as THREE from "three";
 
 import type { HealthState, TickEvent } from "@/lib/api/types";
 import { fmt, valueOf } from "@/lib/format";
+import { cssToken, useTheme } from "@/lib/theme";
 
 /*
  * Bioreactor twin. Every visual is bound to data:
@@ -57,6 +58,8 @@ export function Reactor({ tick, state, position = [0, 0, 0], scale = 1, interact
   const pulse = useRef(0);
   const lastState = useRef<HealthState>(state);
   const [hover, setHover] = useState<Part>(null);
+  const theme = useTheme();
+  const ringTrack = useMemo(() => cssToken("--color-border-subtle", "#1F2933"), [theme]);
 
   const rpm = valueOf(tick, "rpm") ?? 100;
   const aeration = valueOf(tick, "aeration") ?? 50;
@@ -253,7 +256,7 @@ export function Reactor({ tick, state, position = [0, 0, 0], scale = 1, interact
       <group position={[0, H * 0.5, 0]} rotation={[Math.PI / 2, 0, 0]} {...hoverProps("do")}>
         <mesh>
           <torusGeometry args={[R * 1.12, 0.018, 8, 96]} />
-          <meshBasicMaterial color="#1F2933" />
+          <meshBasicMaterial color={ringTrack} />
         </mesh>
         <mesh rotation={[0, 0, Math.PI / 2]}>
           <torusGeometry args={[R * 1.12, 0.032, 8, 96, doArc]} />

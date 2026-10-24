@@ -52,3 +52,32 @@
   --motion-duration-slow: 320ms;
   --motion-easing-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-bg-base: #F5F7F9;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-inset: #EDF1F4;
+  --color-border-subtle: #DCE2E8;
+  --color-border-strong: #BAC5CF;
+  --color-text-primary: #0E1620;
+  --color-text-secondary: #46535F;
+  --color-text-muted: #6A7682;
+  --color-accent-500: #0D9488;
+  --color-accent-600: #0F766E;
+  --color-accent-glow: #0D94881F;
+  --color-state-healthy: #059669;
+  --color-state-watch: #B45309;
+  --color-state-alarm: #DC2647;
+  --color-state-info: #2563EB;
+  --color-provenance-measured: #059669;
+  --color-provenance-published: #2563EB;
+  --color-provenance-assumed: #B45309;
+  --color-provenance-synthetic: #7C3AED;
+  --color-chart-series1: #1BAF7A;
+  --color-chart-series2: #2A78D6;
+  --color-chart-series3: #EB6834;
+  --color-chart-reference: #8794A0;
+  --color-chart-grid: #E3E8ED;
+}

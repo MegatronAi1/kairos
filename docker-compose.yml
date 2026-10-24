@@ -1,0 +1,36 @@
+# Kairos on one laptop: `docker compose up --build`
+#   Control Room  http://localhost:8080
+#   API / phone   http://<laptop-ip>:8000
+# Needs: data/ (IndPenSim) and artifacts/models/kairos.joblib (`make train`).
+# Bedrock: AWS profile from ~/.aws (read-only) + model IDs from .env. Optional.
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      AWS_REGION: us-east-1
+      AWS_CONFIG_FILE: /aws/config
+      AWS_SHARED_CREDENTIALS_FILE: /aws/credentials
+      KAIROS_CORS_ORIGINS: http://localhost:8080,http://localhost:5173
+    volumes:
+      - ./data:/app/data:ro
+      - ./artifacts:/app/artifacts:ro
+      - ${USERPROFILE:-~}/.aws:/aws:ro
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    restart: unless-stopped

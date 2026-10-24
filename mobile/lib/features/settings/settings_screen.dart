@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kairos_pager/core/notifications/alarm_alerts.dart';
 import 'package:kairos_pager/core/providers.dart';
 import 'package:kairos_pager/core/theme/kairos_theme.dart';
+import 'package:kairos_pager/core/theme/theme_pref.dart';
 import 'package:kairos_pager/core/theme/tokens.dart';
 import 'package:kairos_pager/core/ws/event_source.dart';
 
@@ -41,6 +42,18 @@ class SettingsScreen extends ConsumerWidget {
           OutlinedButton(
             onPressed: () => ref.read(pairingProvider.notifier).unpair(),
             child: const Text('Disconnect and pair again'),
+          ),
+          const SizedBox(height: KSpace.s8),
+          Text('THEME', style: KText.overline()),
+          const SizedBox(height: KSpace.s2),
+          SegmentedButton<ThemeMode>(
+            segments: const [
+              ButtonSegment(value: ThemeMode.system, label: Text('System')),
+              ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
+              ButtonSegment(value: ThemeMode.light, label: Text('Light')),
+            ],
+            selected: {ref.watch(themeModeProvider)},
+            onSelectionChanged: (s) => fireAndForget(ref.read(themeModeProvider.notifier).set(s.first)),
           ),
           const SizedBox(height: KSpace.s8),
           Text('ABOUT', style: KText.overline()),

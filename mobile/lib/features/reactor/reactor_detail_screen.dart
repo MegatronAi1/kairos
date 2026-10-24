@@ -75,7 +75,7 @@ class ReactorDetailScreen extends ConsumerWidget {
                   const SizedBox(height: KSpace.s2),
                   Row(
                     children: [
-                      const Icon(LucideIcons.checkCircle, size: 14, color: KColors.textMuted),
+                      Icon(LucideIcons.checkCircle, size: 14, color: KColors.textMuted),
                       const SizedBox(width: KSpace.s1),
                       Text('Acknowledged by operator', style: KText.ui(KSize.xs, color: KColors.textMuted)),
                     ],

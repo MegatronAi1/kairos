@@ -1,6 +1,6 @@
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Activity, BookOpen, FlaskConical, LayoutGrid } from "lucide-react";
+import { Activity, BookOpen, FlaskConical, LayoutGrid, Monitor, Moon, Sun } from "lucide-react";
 import { lazy, Suspense } from "react";
 import { BrowserRouter, NavLink, Route, Routes } from "react-router-dom";
 
@@ -8,6 +8,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Skeleton } from "@/components/primitives";
 import { FleetPage } from "@/features/fleet/FleetPage";
 import { useLive } from "@/lib/store/live";
+import { setThemePref, useThemePref, useThemeSync, type ThemePref } from "@/lib/theme";
 import { useLiveSocket } from "@/lib/ws/socket";
 
 const ReactorPage = lazy(() => import("@/features/reactor/ReactorPage"));
@@ -31,8 +32,35 @@ function ConnectionIndicator() {
   );
 }
 
+function ThemeToggle() {
+  const pref = useThemePref();
+  const options: { value: ThemePref; label: string; icon: typeof Sun }[] = [
+    { value: "system", label: "Match system theme", icon: Monitor },
+    { value: "dark", label: "Dark theme", icon: Moon },
+    { value: "light", label: "Light theme", icon: Sun },
+  ];
+  return (
+    <div className="flex rounded-control border border-border-subtle p-0.5" role="radiogroup" aria-label="Theme">
+      {options.map(({ value, label, icon: Icon }) => (
+        <button
+          key={value}
+          role="radio"
+          aria-checked={pref === value}
+          aria-label={label}
+          title={label}
+          onClick={() => setThemePref(value)}
+          className={`rounded px-1.5 py-1 ${pref === value ? "bg-bg-elevated text-text-primary" : "text-text-muted hover:text-text-primary"}`}
+        >
+          <Icon size={14} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function Shell() {
   useLiveSocket();
+  useThemeSync();
   const link = ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-2 rounded-control px-3 py-1.5 text-sm ${isActive ? "bg-bg-elevated text-text-primary" : "text-text-secondary hover:text-text-primary"}`;
   return (
@@ -59,6 +87,7 @@ function Shell() {
             <FlaskConical size={13} /> IndPenSim · simulated data
           </span>
           <ConnectionIndicator />
+          <ThemeToggle />
         </div>
       </header>
       <main className="min-h-0 flex-1">

@@ -6,6 +6,7 @@ import { StatusPill } from "@/components/primitives";
 import type { HealthState, TickEvent } from "@/lib/api/types";
 import { fmt, fmtInt, stateVar, valueOf } from "@/lib/format";
 import type { ReactorLive } from "@/lib/store/live";
+import { cssToken, useTheme } from "@/lib/theme";
 
 import { Reactor } from "./Reactor";
 
@@ -31,6 +32,8 @@ export function Stage({
   fallback: ReactNode;
 }) {
   const webgl = useMemo(hasWebGL, []);
+  const theme = useTheme();
+  const bg = useMemo(() => cssToken("--color-bg-base", "#0A0E13"), [theme]);
   if (!webgl) return <>{fallback}</>;
   return (
     <Canvas
@@ -40,9 +43,9 @@ export function Stage({
       frameloop="always"
       style={{ background: "transparent" }}
     >
-      <color attach="background" args={["#0A0E13"]} />
-      <fog attach="fog" args={["#0A0E13", 14, 30]} />
-      <ambientLight intensity={0.25} />
+      <color attach="background" args={[bg]} />
+      <fog attach="fog" args={[bg, 14, 30]} />
+      <ambientLight intensity={theme === "light" ? 0.7 : 0.25} />
       <directionalLight position={[4, 8, 6]} intensity={0.9} />
       <Suspense fallback={null}>
         <Environment resolution={64}>
