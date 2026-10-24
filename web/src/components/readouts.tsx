@@ -100,7 +100,10 @@ export function InsightCardView({ insight, state }: { insight: InsightEvent; sta
           </div>
           <p className="mt-0.5 font-medium">{c.action}</p>
           {c.expected_effect && (
-            <p className="mt-1 text-sm text-text-secondary">Expected: {c.expected_effect} (model estimate)</p>
+            <p className="mt-1 text-sm text-text-secondary">
+              Expected: {c.expected_effect}
+              {/estimate/i.test(c.expected_effect) ? "" : " (model estimate)"}
+            </p>
           )}
         </div>
         {c.evidence.length > 0 && (

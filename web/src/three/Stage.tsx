@@ -96,8 +96,8 @@ export function FleetScene({ reactors, onSelect }: { reactors: ReactorLive[]; on
 export function ReactorScene({ tick, state }: { tick: TickEvent | null; state: HealthState }) {
   return (
     <Stage
-      camera={[3.4, 3.0, 6.6]}
-      orbit={{ target: [0, 2.0, 0], minDistance: 4.5, maxDistance: 12 }}
+      camera={[3.8, 3.0, 7.6]}
+      orbit={{ autoRotate: true, target: [0, 1.95, 0], minDistance: 4.2, maxDistance: 12 }}
       fallback={<VesselSvg tick={tick} state={state} />}
     >
       <Reactor tick={tick} state={state} />
