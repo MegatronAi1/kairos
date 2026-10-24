@@ -1,0 +1,15 @@
+# Demo script (about 3 minutes live, 60-second version in brackets)
+
+Setup: laptop browser on the hosted URL (or `docker compose up` locally), phone signed in to the same server, sound on. Before the jury arrives: open Pune -> R2 in a second tab and press Restart on its timeline about 30 s before you start, so the alarm lands during the story.
+
+1. **Landing (15 s).** "Every batch has a decisive moment. Kairos finds it." Point at the four KPI cards: real numbers on batches the models never saw.
+2. **Sign in (5 s).** Click the operator demo account.
+3. **Operations map (20 s).** "Aurora Bioproteins, a fictional company running four alternative-protein plants: mycoprotein in Pune, whey in Bengaluru, egg protein in Rotterdam, lactoferrin in Singapore." Pune turns red. [Phone buzzes on the table.]
+4. **Phone (15 s).** Show the full-screen alarm: "Oxygen transfer dropping", the countdown (about 8 h to the point of no return), the action. Tap Acknowledge; the console shows "Acknowledged".
+5. **Plant -> R2 (40 s).** The 3D reactor: oxygen ring and broth colour shifting. Open the dissolved-oxygen tile, then the forecast tile: the yield range widens and drops. Copilot card: cause, one action, expected effect, evidence chips.
+6. **Simulate the fix (30 s).** Click "Simulate the fix": fix now keeps about 3,400 kg; wait past the point of no return and it falls; do nothing is about 2,500 and dropping. "Model estimate from healthy analog batches."
+7. **Ask Kairos (20 s).** Type "How much energy can PUN-R1 save without risking oxygen?" The answer streams with evidence chips.
+8. **Process library (15 s).** Switch to Precision -> Whey protein: stirred-tank schematic, phases, why the benchmark fits Trichoderma fed-batch.
+9. **Evidence (20 s).** Four KPIs, false alarms 0.2 vs 11.4 for classic MSPC, energy Pareto. "Every number is reproducible from the repo."
+
+Fallbacks: if Bedrock is down, the rule-based card still appears; if venue Wi-Fi fails, run `docker compose up` on the laptop and pair the phone over USB (`adb reverse tcp:8000 tcp:8000`).
