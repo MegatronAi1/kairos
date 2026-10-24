@@ -39,7 +39,9 @@ class MlEngines:
         self.models = models
         self.batches = batches
         self.scores: dict[int, BatchScores] = {b: models.score(d) for b, d in batches.items()}
-        self.since: dict[int, npt.NDArray[np.float64]] = {b: _state_since(s, d) for b, (d, s) in self._pairs()}
+        self.since: dict[int, npt.NDArray[np.float64]] = {
+            b: _state_since(s, d) for b, (d, s) in self._pairs()
+        }
 
     def _pairs(self) -> list[tuple[int, tuple[BatchData, BatchScores]]]:
         return [(b, (self.batches[b], self.scores[b])) for b in self.batches]

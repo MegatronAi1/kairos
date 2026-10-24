@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from fastapi import HTTPException, Request, status
 
@@ -11,6 +12,9 @@ from app.pipeline.events import EventBus
 from app.replay.engine import Reactor, ReplayEngine
 from app.replay.store import BatchStore
 
+if TYPE_CHECKING:
+    from app.agent.service import AgentService
+
 
 @dataclass
 class AppState:
@@ -18,6 +22,7 @@ class AppState:
     store: BatchStore
     bus: EventBus
     engine: ReplayEngine
+    agent: AgentService | None = None
 
     def reactor(self, reactor_id: str) -> Reactor:
         r = self.engine.reactors.get(reactor_id)

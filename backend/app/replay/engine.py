@@ -35,6 +35,8 @@ class Reactor:
     t_h: float = 0.0
     state: HealthState = "normal"
     acknowledged: bool = False
+    latched: bool = False  # alarm held although the detector currently reads lower
+    detector_state: HealthState = "normal"  # raw detector reading before latching
     last_tick: TickEvent | None = None
     last_insight: InsightEvent | None = None
     history: list[AlarmEvent] = field(default_factory=list)
@@ -59,6 +61,8 @@ class Reactor:
     def reset_state(self) -> None:
         self.state = "normal"
         self.acknowledged = False
+        self.latched = False
+        self.detector_state = "normal"
         self.last_tick = None
         self.last_insight = None
         self.history.clear()
@@ -125,7 +129,10 @@ class ReplayEngine:
         new_state = tick.health.state if tick.health else "normal"
         # Alarms latch until the operator acknowledges them (ISA-18.2 practice): a
         # process that partly adapts to a fault must not silently clear the alarm.
+        reactor.detector_state = new_state
+        reactor.latched = False
         if reactor.state == "alarm" and new_state != "alarm" and not reactor.acknowledged:
+            reactor.latched = True
             new_state = "alarm"
             if tick.health is not None:
                 tick.health.state = "alarm"

@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Literal
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.agent.ratelimit import TokenBucket
+from app.agent.service import AgentService
 from app.agent.templates import template_card
-from app.api import routes_batches, routes_meta, routes_reactors, ws
+from app.agent.tools import ToolBox
+from app.api import routes_agent, routes_batches, routes_meta, routes_reactors, ws
 from app.config import Settings, get_settings
 from app.core.logging import configure_logging, log
 from app.pipeline.events import EventBus
@@ -17,7 +22,7 @@ from app.pipeline.inference import Engines, InferencePipeline, NullEngines
 from app.replay.engine import ReplayEngine
 from app.replay.scenarios import get_scenario
 from app.replay.store import BatchStore
-from app.schemas import AlarmEvent, InsightEvent
+from app.schemas import AlarmEvent, InsightCard, InsightEvent
 from app.state import AppState
 
 API_PREFIX = "/api/v1"
@@ -33,6 +38,19 @@ def load_engines() -> Engines:
         return NullEngines()
 
 
+def build_agent(settings: Settings, state: AppState) -> AgentService:
+    client = None
+    if settings.model_chat or settings.model_fast:
+        try:
+            from app.agent.bedrock import BedrockClient
+
+            client = BedrockClient(settings, TokenBucket(settings.bedrock_max_rps))
+        except Exception as e:  # missing credentials must not stop the plant view
+            log.warning("agent_disabled", error=type(e).__name__)
+    tools = ToolBox(state, settings.artifacts_dir / "metrics")
+    return AgentService(client, tools, settings.model_chat, settings.model_fast)
+
+
 def build_state(settings: Settings, engines: Engines | None = None) -> AppState:
     store = BatchStore.load(settings.data_dir)
     bus = EventBus()
@@ -41,21 +59,40 @@ def build_state(settings: Settings, engines: Engines | None = None) -> AppState:
     )
     engine.load_scenario(get_scenario(settings.scenario), settings.default_speed_h_per_s)
 
-    async def on_transition(alarm: AlarmEvent) -> None:
-        engine.publish_insight(
-            InsightEvent(
-                reactor_id=alarm.reactor_id,
-                ts=alarm.ts,
-                t_h=alarm.t_h,
-                progress=alarm.progress,
-                batch_id=alarm.batch_id,
-                card=template_card(alarm),
-                source="template",
-            )
+    state = AppState(settings=settings, store=store, bus=bus, engine=engine)
+    state.agent = build_agent(settings, state)
+    pending: set[asyncio.Task[None]] = set()
+
+    def insight(
+        alarm: AlarmEvent, card: InsightCard, source: Literal["agent", "template"]
+    ) -> InsightEvent:
+        return InsightEvent(
+            reactor_id=alarm.reactor_id,
+            ts=alarm.ts,
+            t_h=alarm.t_h,
+            progress=alarm.progress,
+            batch_id=alarm.batch_id,
+            card=card,
+            source=source,
         )
 
+    async def agent_card(alarm: AlarmEvent) -> None:
+        card = await state.agent.alarm_card(alarm) if state.agent else None
+        reactor = engine.reactors.get(alarm.reactor_id)
+        # Publish only if the reactor is still in the state this card describes.
+        if card is not None and reactor is not None and reactor.state == alarm.state:
+            engine.publish_insight(insight(alarm, card, "agent"))
+
+    async def on_transition(alarm: AlarmEvent) -> None:
+        # Rule-based card first (instant, always available), agent card follows.
+        engine.publish_insight(insight(alarm, template_card(alarm), "template"))
+        if alarm.state != "normal":
+            task = asyncio.create_task(agent_card(alarm))
+            pending.add(task)
+            task.add_done_callback(pending.discard)
+
     engine.on_transition = on_transition
-    return AppState(settings=settings, store=store, bus=bus, engine=engine)
+    return state
 
 
 def create_app(settings: Settings | None = None, *, autostart: bool = True) -> FastAPI:
@@ -66,7 +103,12 @@ def create_app(settings: Settings | None = None, *, autostart: bool = True) -> F
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         state = build_state(settings)
         app.state.kairos = state
-        log.info("startup", batches=len(state.store.batches), reactors=list(state.engine.reactors))
+        log.info(
+            "startup",
+            batches=len(state.store.batches),
+            reactors=list(state.engine.reactors),
+            agent=bool(state.agent and state.agent.enabled),
+        )
         if autostart:
             state.engine.start()
         yield
@@ -79,7 +121,7 @@ def create_app(settings: Settings | None = None, *, autostart: bool = True) -> F
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    for module in (routes_meta, routes_reactors, routes_batches):
+    for module in (routes_meta, routes_reactors, routes_batches, routes_agent):
         app.include_router(module.router, prefix=API_PREFIX)
     app.include_router(ws.router)
     return app

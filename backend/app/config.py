@@ -29,7 +29,6 @@ class Settings(BaseSettings):
     default_speed_h_per_s: float = 1.0
     local_shap_every_n_ticks: int = 10
 
-
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
