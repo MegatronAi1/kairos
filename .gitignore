@@ -1,5 +1,5 @@
 # Data and large artifacts
-data/
+/data/
 artifacts/models/*.joblib
 artifacts/golden/*.parquet
 !artifacts/**/.gitkeep
