@@ -24,6 +24,11 @@ abstract final class KColors {
   static const provenancePublished = Color(0xFF60A5FA);
   static const provenanceAssumed = Color(0xFFF5A524);
   static const provenanceSynthetic = Color(0xFFA78BFA);
+  static const chartSeries1 = Color(0xFF199E70);
+  static const chartSeries2 = Color(0xFF3987E5);
+  static const chartSeries3 = Color(0xFFD95926);
+  static const chartReference = Color(0xFF66727F);
+  static const chartGrid = Color(0xFF1F2933);
 }
 
 abstract final class KSize {

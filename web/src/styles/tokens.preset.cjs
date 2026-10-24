@@ -22,7 +22,12 @@ module.exports = {
         "provenance-measured": "var(--color-provenance-measured)",
         "provenance-published": "var(--color-provenance-published)",
         "provenance-assumed": "var(--color-provenance-assumed)",
-        "provenance-synthetic": "var(--color-provenance-synthetic)"
+        "provenance-synthetic": "var(--color-provenance-synthetic)",
+        "chart-series1": "var(--color-chart-series1)",
+        "chart-series2": "var(--color-chart-series2)",
+        "chart-series3": "var(--color-chart-series3)",
+        "chart-reference": "var(--color-chart-reference)",
+        "chart-grid": "var(--color-chart-grid)"
       },
       "fontFamily": {
         "ui": [

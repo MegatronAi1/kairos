@@ -43,6 +43,9 @@ DERIVED_KEYS: dict[str, str] = {
     "agitator_kw": "agitator_kw",
     "compressor_kw": "compressor_kw",
     "kwh_cum": "kwh_cum",
+    "biomass_lab": "biomass_lab",
+    "penicillin_lab": "penicillin_lab",
+    "production_rate": "production_rate",
 }
 
 

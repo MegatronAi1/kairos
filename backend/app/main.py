@@ -14,7 +14,14 @@ from app.agent.ratelimit import TokenBucket
 from app.agent.service import AgentService
 from app.agent.templates import template_card
 from app.agent.tools import ToolBox
-from app.api import routes_agent, routes_batches, routes_meta, routes_reactors, ws
+from app.api import (
+    routes_agent,
+    routes_batches,
+    routes_meta,
+    routes_metrics,
+    routes_reactors,
+    ws,
+)
 from app.config import Settings, get_settings
 from app.core.logging import configure_logging, log
 from app.pipeline.events import EventBus
@@ -121,7 +128,7 @@ def create_app(settings: Settings | None = None, *, autostart: bool = True) -> F
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    for module in (routes_meta, routes_reactors, routes_batches, routes_agent):
+    for module in (routes_meta, routes_reactors, routes_batches, routes_agent, routes_metrics):
         app.include_router(module.router, prefix=API_PREFIX)
     app.include_router(ws.router)
     return app

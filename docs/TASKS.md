@@ -10,10 +10,10 @@ Legend: [ ] todo, [~] in progress, [x] done
 - [~] M5 Energy model (power, kLa, OTR) + setpoint recommender
 - [~] M6 Replay streamer + FastAPI + WebSocket
 - [x] M7 Claude agent on Bedrock (tool use, streaming, template fallback)
-- [ ] M8 Web Control Room: 3D twin, vitals, copilot, timeline
+- [~] M8 Web Control Room: 3D twin, vitals, copilot, timeline
 - [ ] M9 Flutter Pager: reactor list, alarm takeover, alarm detail
-- [ ] M10 Evidence page from metrics JSON
-- [ ] M11 Provenance labels in UI
+- [x] M10 Evidence page from metrics JSON
+- [x] M11 Provenance labels in UI
 - [ ] M12 `docker compose up` on one laptop
 
 ## Should

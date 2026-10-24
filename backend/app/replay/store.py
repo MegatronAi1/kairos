@@ -94,6 +94,7 @@ class BatchStore:
             cols.update(d.__dict__)
             dt = np.diff(cols["time_h"], prepend=0.0)
             cols["kwh_cum"] = np.cumsum(cols["power_kw"] * dt)
+            cols.update(_lab_columns(cols))
             b_id = int(cast(int, bid))
             batches[b_id] = Batch(b_id, cols, yields.get(b_id))
         return cls(batches)
@@ -111,3 +112,22 @@ def _load_yields() -> dict[int, float]:
     total = next(c for c in stats.columns if "yield_total" in c.lower())
     # Values are labelled kg but match final P*V in grams (docs/DECISIONS.md).
     return {int(r): float(v) / 1000.0 for r, v in zip(stats[ref], stats[total], strict=True)}
+
+
+def _lab_columns(cols: dict[str, Array]) -> dict[str, Array]:
+    """Latest lab biomass / penicillin (forward-filled from sample time only) and the
+    penicillin production rate between the last two lab samples (g/L/h)."""
+    t = cols["time_h"]
+    x = pd.Series(cols["biomass_offline"]).ffill().fillna(0.0).to_numpy()
+    p_raw = pd.Series(cols["penicillin_offline"])
+    p = p_raw.ffill().fillna(0.0).to_numpy()
+    rate = np.zeros_like(t)
+    last_t = last_p = None
+    current = 0.0
+    for i, v in enumerate(p_raw.to_numpy()):
+        if not np.isnan(v):
+            if last_t is not None and t[i] > last_t:
+                current = max(0.0, (v - last_p) / (t[i] - last_t))
+            last_t, last_p = t[i], v
+        rate[i] = current
+    return {"biomass_lab": x, "penicillin_lab": p, "production_rate": rate}

@@ -1,0 +1,90 @@
+import * as Tooltip from "@radix-ui/react-tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Activity, BookOpen, FlaskConical, LayoutGrid } from "lucide-react";
+import { lazy, Suspense } from "react";
+import { BrowserRouter, NavLink, Route, Routes } from "react-router-dom";
+
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { Skeleton } from "@/components/primitives";
+import { FleetPage } from "@/features/fleet/FleetPage";
+import { useLive } from "@/lib/store/live";
+import { useLiveSocket } from "@/lib/ws/socket";
+
+const ReactorPage = lazy(() => import("@/features/reactor/ReactorPage"));
+const EvidencePage = lazy(() => import("@/features/evidence/EvidencePage"));
+const MethodPage = lazy(() => import("@/features/method/MethodPage"));
+
+const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: 1 } } });
+
+function ConnectionIndicator() {
+  const status = useLive((s) => s.status);
+  const [color, label] = {
+    live: ["var(--color-state-healthy)", "Live"],
+    connecting: ["var(--color-state-watch)", "Connecting"],
+    offline: ["var(--color-state-alarm)", "Offline, retrying"],
+  }[status];
+  return (
+    <span className="flex items-center gap-2 text-xs text-text-secondary" role="status" aria-live="polite">
+      <span className="h-2 w-2 rounded-full" style={{ background: color }} />
+      {label}
+    </span>
+  );
+}
+
+function Shell() {
+  useLiveSocket();
+  const link = ({ isActive }: { isActive: boolean }) =>
+    `flex items-center gap-2 rounded-control px-3 py-1.5 text-sm ${isActive ? "bg-bg-elevated text-text-primary" : "text-text-secondary hover:text-text-primary"}`;
+  return (
+    <div className="flex h-full flex-col">
+      <header className="flex h-14 shrink-0 items-center gap-6 border-b border-border-subtle px-5">
+        <div className="flex items-center gap-2">
+          <span className="h-3 w-3 rounded-full border-2 border-accent-500" aria-hidden />
+          <span className="font-semibold tracking-wide">Kairos</span>
+          <span className="text-sm text-text-muted">Control Room</span>
+        </div>
+        <nav className="flex items-center gap-1" aria-label="Main">
+          <NavLink to="/" end className={link}>
+            <LayoutGrid size={15} /> Fleet
+          </NavLink>
+          <NavLink to="/evidence" className={link}>
+            <Activity size={15} /> Evidence
+          </NavLink>
+          <NavLink to="/method" className={link}>
+            <BookOpen size={15} /> Method
+          </NavLink>
+        </nav>
+        <div className="ml-auto flex items-center gap-4">
+          <span className="flex items-center gap-1.5 text-xs text-text-muted">
+            <FlaskConical size={13} /> IndPenSim · simulated data
+          </span>
+          <ConnectionIndicator />
+        </div>
+      </header>
+      <main className="min-h-0 flex-1">
+        <ErrorBoundary>
+        <Suspense fallback={<Skeleton className="m-6 h-96" />}>
+          <Routes>
+            <Route path="/" element={<FleetPage />} />
+            <Route path="/reactor/:id" element={<ReactorPage />} />
+            <Route path="/evidence" element={<EvidencePage />} />
+            <Route path="/method" element={<MethodPage />} />
+          </Routes>
+        </Suspense>
+        </ErrorBoundary>
+      </main>
+    </div>
+  );
+}
+
+export function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Tooltip.Provider>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <Shell />
+        </BrowserRouter>
+      </Tooltip.Provider>
+    </QueryClientProvider>
+  );
+}

@@ -60,3 +60,11 @@ def test_ws_snapshot_then_alarm(client: TestClient, state: AppState) -> None:
             if {"alarm", "insight"} <= seen:
                 break
         assert {"tick", "alarm", "insight"} <= seen
+
+
+def test_metrics_reads_artifacts(client: TestClient, state: AppState, tmp_path) -> None:  # type: ignore[no-untyped-def]
+    (tmp_path / "metrics").mkdir()
+    (tmp_path / "metrics" / "yield.json").write_text('{"unit": "kg"}', encoding="utf-8")
+    state.settings.artifacts_dir = tmp_path
+    body = client.get(f"{API}/metrics").json()
+    assert body == {"yield": {"unit": "kg"}}

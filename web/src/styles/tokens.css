@@ -20,6 +20,11 @@
   --color-provenance-published: #60A5FA;
   --color-provenance-assumed: #F5A524;
   --color-provenance-synthetic: #A78BFA;
+  --color-chart-series1: #199E70;
+  --color-chart-series2: #3987E5;
+  --color-chart-series3: #D95926;
+  --color-chart-reference: #66727F;
+  --color-chart-grid: #1F2933;
   --font-family-ui: Inter, system-ui, sans-serif;
   --font-family-mono: 'JetBrains Mono', ui-monospace, monospace;
   --font-size-xs: 12px;
