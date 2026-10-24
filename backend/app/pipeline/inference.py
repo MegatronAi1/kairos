@@ -29,6 +29,7 @@ SENSOR_KEYS: dict[str, str] = {
     "base_lph": "base_lph",
     "acid_lph": "acid_lph",
     "cooling_lph": "cooling_lph",
+    "heating_lph": "heating_lph",
     "paa_lph": "paa_lph",
     "oil_lph": "oil_lph",
 }

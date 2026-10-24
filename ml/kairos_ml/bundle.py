@@ -10,7 +10,14 @@ import numpy as np
 import numpy.typing as npt
 
 from kairos_ml.dataset import BatchData
-from kairos_ml.engines.fault_detector import AlarmLogic, Mspc, State, health_score, warmup_mask
+from kairos_ml.engines.fault_detector import (
+    AlarmLogic,
+    Mspc,
+    State,
+    health_score,
+    sustained,
+    warmup_mask,
+)
 from kairos_ml.engines.yield_model import YieldModel
 from kairos_ml.features.golden import GoldenTrajectory
 
@@ -67,7 +74,7 @@ class KairosModels:
             p90=hi,
             ratio=ratio,
             ratio_smooth=smooth,
-            health=health_score(smooth),
+            health=health_score(sustained(smooth, self.alarm.persistence)),
             states=self.alarm.states(ratio),
             t2=t2,
             spe=spe,

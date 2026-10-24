@@ -23,10 +23,22 @@ from app.state import AppState
 API_PREFIX = "/api/v1"
 
 
+def load_engines() -> Engines:
+    try:
+        from app.pipeline.ml_engines import MlEngines
+
+        return MlEngines.load()
+    except FileNotFoundError:
+        log.warning("no_trained_models", hint="run `make train` to enable forecasts and alarms")
+        return NullEngines()
+
+
 def build_state(settings: Settings, engines: Engines | None = None) -> AppState:
     store = BatchStore.load(settings.data_dir)
     bus = EventBus()
-    engine = ReplayEngine(store, InferencePipeline(engines or NullEngines()), bus, settings.tick_hz)
+    engine = ReplayEngine(
+        store, InferencePipeline(engines or load_engines()), bus, settings.tick_hz
+    )
     engine.load_scenario(get_scenario(settings.scenario), settings.default_speed_h_per_s)
 
     async def on_transition(alarm: AlarmEvent) -> None:

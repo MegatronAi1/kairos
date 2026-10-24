@@ -123,6 +123,12 @@ class ReplayEngine:
         reactor.last_tick = tick
         self.bus.publish(tick.model_dump())
         new_state = tick.health.state if tick.health else "normal"
+        # Alarms latch until the operator acknowledges them (ISA-18.2 practice): a
+        # process that partly adapts to a fault must not silently clear the alarm.
+        if reactor.state == "alarm" and new_state != "alarm" and not reactor.acknowledged:
+            new_state = "alarm"
+            if tick.health is not None:
+                tick.health.state = "alarm"
         if new_state != reactor.state:
             await self._transition(reactor, tick, new_state)
         return tick

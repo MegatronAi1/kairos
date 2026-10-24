@@ -37,7 +37,11 @@ class GoldenTrajectory:
         std = g[variables].std().reindex(range(n)).ffill().bfill().to_numpy(dtype=float)
         # Robust floor: never below the variable's median per-time std. Without it,
         # phases where all training batches agree (std ~ 0) turn noise into huge z.
-        std = np.maximum(std, np.maximum(np.nanmedian(std, axis=0), 1e-6))
+        # Absolute floor (5% of overall std) covers variables that are almost always
+        # zero in training (e.g. acid flow), where both mean and median std vanish.
+        overall = np.nanstd(df[variables].to_numpy(dtype=float), axis=0)
+        floor = np.maximum(np.nanmedian(std, axis=0), np.maximum(0.05 * overall, 1e-6))
+        std = np.maximum(std, floor)
         return cls(variables, mean, std)
 
     def _rows(self, time_h: npt.ArrayLike) -> npt.NDArray[np.int64]:

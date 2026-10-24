@@ -55,16 +55,13 @@ class Mspc:
         return np.maximum(t2 / self.t2_limit, spe / self.spe_limit), t2, spe
 
     def contributions(self, z_row: Array) -> Array:
-        """Per-variable share (sums to 1) mixing T2 and SPE contributions by their ratios."""
-        x = np.clip(np.nan_to_num(z_row), -Z_CLIP, Z_CLIP)
-        score = self.pca.transform(x[None, :])[0]
-        recon = self.pca.inverse_transform(score[None, :])[0]
-        spe_c = (x - recon) ** 2
-        t2_c = np.abs(((score / self.pca.explained_variance_) @ self.pca.components_) * x)
-        t2, spe = self.stats(x[None, :])
-        w_t2, w_spe = float(t2[0] / self.t2_limit), float(spe[0] / self.spe_limit)
-        mix = w_t2 * t2_c / max(t2_c.sum(), 1e-12) + w_spe * spe_c / max(spe_c.sum(), 1e-12)
-        return np.asarray(mix / max(mix.sum(), 1e-12), dtype=float)
+        """Per-variable share (sums to 1) of the clipped squared deviation from golden.
+
+        Simple and operator-readable: the variables furthest from normal batches at
+        this batch time, which are also what drive T2 and SPE after clipping.
+        """
+        x = np.clip(np.nan_to_num(z_row), -Z_CLIP, Z_CLIP) ** 2
+        return np.asarray(x / max(float(x.sum()), 1e-12), dtype=float)
 
 
 @dataclass
@@ -107,9 +104,17 @@ class AlarmLogic:
         return states
 
 
-def health_score(r_smooth: Array) -> Array:
-    """0-100, higher is healthier: 70 at the 99% limit (r = 1), ~37 at r = 2."""
-    return np.asarray(100.0 / (1.0 + 0.43 * np.clip(r_smooth, 0, None) ** 2), dtype=float)
+def sustained(r_smooth: Array, persistence: int) -> Array:
+    """Rolling minimum over the persistence window: the level held for the last k rows."""
+    out = np.empty_like(r_smooth)
+    for i in range(len(r_smooth)):
+        out[i] = np.min(r_smooth[max(0, i - persistence + 1) : i + 1])
+    return out
+
+
+def health_score(r_sustained: Array) -> Array:
+    """0-100, higher is healthier: 70 at the 99% limit (r = 1), 20 at the alarm level (r = 3)."""
+    return np.asarray(100.0 / (1.0 + 0.43 * np.clip(r_sustained, 0, None) ** 2), dtype=float)
 
 
 def warmup_mask(time_h: Array) -> Array:
