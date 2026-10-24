@@ -17,8 +17,8 @@ Legend: [ ] todo, [~] in progress, [x] done
 - [ ] M12 `docker compose up` on one laptop
 
 ## Should
-- [ ] S1 Point of no return
-- [ ] S2 What-if console
+- [x] S1 Point of no return
+- [x] S2 What-if console
 - [ ] S3 Fleet view (4 reactors)
 - [ ] S4 Pager chat
 - [ ] S5 AWS hosted deploy

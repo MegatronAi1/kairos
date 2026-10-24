@@ -18,6 +18,7 @@ from kairos_ml.engines.fault_detector import (
     sustained,
     warmup_mask,
 )
+from kairos_ml.engines.ponr import AnalogRescue
 from kairos_ml.engines.yield_model import YieldModel
 from kairos_ml.features.golden import GoldenTrajectory
 
@@ -55,6 +56,8 @@ class KairosModels:
     fault_holdout_models: dict[int, YieldModel] = field(default_factory=dict)
     # Interval half-width (kg) once a batch has alarmed, from held-out fault residuals.
     alarm_half_width: dict[float, float] = field(default_factory=dict)
+    # Point of no return / what-if via healthy analog batches (spec 7.5 tier 1).
+    rescue: AnalogRescue | None = None
 
     def save(self, path: Path = BUNDLE_PATH) -> Path:
         path.parent.mkdir(parents=True, exist_ok=True)

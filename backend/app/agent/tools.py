@@ -318,13 +318,45 @@ class ToolBox:
     def simulate_what_if(
         self, reactor_id: str, at_h: float | None = None, changes: Json | None = None
     ) -> Json:
-        return {"available": False, "reason": "What-if simulator not connected yet in this build."}
+        r = self._reactor(reactor_id)
+        res = self._ponr(r)
+        if res is None:
+            return {"available": False, "reason": "what-if model not loaded"}
+        target = at_h if at_h is not None else res.now_h
+        point = min(res.curve, key=lambda c: abs(c.fix_h - target))
+        return {
+            "reactor_id": r.id,
+            "if_fixed_at_h": point.fix_h,
+            "recovered_final_yield_kg": {
+                "p10": round(point.p10),
+                "p50": round(point.p50),
+                "p90": round(point.p90),
+            },
+            "if_unchanged_forecast_kg": r.last_tick.forecast.p50
+            if r.last_tick and r.last_tick.forecast
+            else None,
+            "note": "Correction = restoring normal operation (e.g. the rescue setpoints). Model estimate from healthy analog batches.",
+        }
 
     def estimate_point_of_no_return(self, reactor_id: str) -> Json:
+        r = self._reactor(reactor_id)
+        res = self._ponr(r)
+        if res is None:
+            return {"available": False, "reason": "point-of-no-return model not loaded"}
         return {
-            "available": False,
-            "reason": "Point-of-no-return estimator not connected yet in this build.",
+            "reactor_id": r.id,
+            "now_h": res.now_h,
+            "hours_left": res.hours_left,
+            "beyond_horizon": res.hours_left is None,
+            "act_immediately": res.hours_left == 0,
+            "target_kg": round(res.target_kg),
+            "definition": "Latest fix time that still recovers 90% of the yield a healthy batch in this state would deliver (model estimate).",
         }
+
+    def _ponr(self, r: Any) -> Any:
+        ml = self._ml
+        first_alarm = next((a.t_h for a in r.history if a.state == "alarm"), None)
+        return ml.ponr(r.batch, r.batch.index_at(r.t_h), reference_h=first_alarm) if ml else None
 
     def get_model_evidence(self) -> Json:
         y, f = self._metrics("yield"), self._metrics("faults")

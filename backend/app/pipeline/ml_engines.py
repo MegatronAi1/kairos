@@ -19,6 +19,7 @@ from kairos_ml.constants import load_constants
 from kairos_ml.data.load import load_process_frame
 from kairos_ml.dataset import BatchData, build_batches
 from kairos_ml.engines.energy import EnergyEngine, Option
+from kairos_ml.engines.ponr import PonrResult
 
 # Monitored model variable -> client sensor key (docs/API.md).
 VAR_TO_KEY: dict[str, str] = {
@@ -42,6 +43,7 @@ class MlEngines:
         self.batches = batches
         self.scores: dict[int, BatchScores] = {b: models.score(d) for b, d in batches.items()}
         self.energy = EnergyEngine()
+        self._ponr_cache: dict[tuple[int, int, float | None], PonrResult] = {}
         self.since: dict[int, npt.NDArray[np.float64]] = {
             b: _state_since(s, d) for b, (d, s) in self._pairs()
         }
@@ -70,6 +72,18 @@ class MlEngines:
             vs_golden_pct=round(100.0 * p50 / ym.golden_yield_kg, 1),
             confidence=ym.confidence(p50, lo, hi),
         )
+
+    def ponr(self, batch: Batch, idx: int, reference_h: float | None = None) -> PonrResult | None:
+        """Point of no return and recovery curve if the fault were fixed now or later."""
+        rescue = self.models.rescue
+        data = self.batches.get(batch.batch_id)
+        if rescue is None or data is None:
+            return None
+        ref = None if reference_h is None else round(reference_h, 1)
+        key = (batch.batch_id, idx // 5, ref)  # one estimate per batch-hour and anchor
+        if key not in self._ponr_cache:
+            self._ponr_cache[key] = rescue.evaluate(data, float(batch.time_h[idx]), reference_h=ref)
+        return self._ponr_cache[key]
 
     def health(self, batch: Batch, idx: int) -> Health | None:
         s = self.scores.get(batch.batch_id)

@@ -14,6 +14,7 @@ from kairos_ml.data.load import load_process_frame
 from kairos_ml.data.splits import load_onsets, load_splits
 from kairos_ml.dataset import BatchData, build_batches, fit_golden
 from kairos_ml.engines.fault_detector import AlarmLogic, Mspc, warmup_mask
+from kairos_ml.engines.ponr import AnalogRescue
 from kairos_ml.engines.yield_model import CHECKPOINT_EVERY_ROWS, YieldModel, conformal_quantile
 
 
@@ -67,6 +68,7 @@ def main() -> None:
         fault_holdout_models=holdouts,
     )
     models.alarm_half_width = alarm_half_widths(models, [batches[f] for f in faults])
+    models.rescue = AnalogRescue.fit(train)
     path = models.save()
     print(
         f"saved {path} in {time.perf_counter() - t0:.1f}s; PCA components {mspc.pca.n_components_}"

@@ -63,6 +63,7 @@ export const api = {
   },
   provenance: () => request<ProvenanceResponse>("/provenance"),
   metrics: () => request<Metrics>("/metrics"),
+  whatif: (id: string) => request<import("@/components/viz").WhatIf>(`/reactors/${id}/whatif`),
   forecastHistory: (id: string) =>
     request<{ t_h: number[]; p10: number[]; p50: number[]; p90: number[]; typical: number; unit: string }>(
       `/reactors/${id}/forecast-history`,

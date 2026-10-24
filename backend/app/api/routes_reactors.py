@@ -92,3 +92,39 @@ def forecast_history(
         "typical": round(typical),
         "unit": engines.models.yield_model.unit,
     }
+
+
+@router.get("/{reactor_id}/whatif")
+def whatif(reactor_id: str, state: AppState = Depends(get_state)) -> dict[str, object]:
+    """If the fault is corrected at each future hour, what final yield is still reachable?"""
+    from app.pipeline.ml_engines import MlEngines
+
+    r = state.reactor(reactor_id)
+    engines = state.engine.pipeline.engines
+    if not isinstance(engines, MlEngines):
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Models not loaded")
+    first_alarm = next((a.t_h for a in r.history if a.state == "alarm"), None)
+    res = engines.ponr(r.batch, r.batch.index_at(r.t_h), reference_h=first_alarm)
+    if res is None:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "What-if model not available")
+    f = r.last_tick.forecast if r.last_tick else None
+    return {
+        "reactor_id": r.id,
+        "now_h": round(res.now_h, 1),
+        "target_kg": round(res.target_kg),
+        "ponr_h": None if res.ponr_h is None else round(res.ponr_h, 1),
+        "hours_left": None if res.hours_left is None else round(res.hours_left, 1),
+        "passed": res.passed,
+        "if_unchanged_kg": None if f is None else f.p50,
+        "curve": [
+            {
+                "fix_h": round(c.fix_h, 1),
+                "p10": round(c.p10),
+                "p50": round(c.p50),
+                "p90": round(c.p90),
+            }
+            for c in res.curve
+        ],
+        "method": "analog healthy batches matched on biomass and product so far; model estimate",
+        "provenance": "synthetic",
+    }

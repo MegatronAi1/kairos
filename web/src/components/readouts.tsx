@@ -76,7 +76,15 @@ export function MetricReadout({
   );
 }
 
-export function InsightCardView({ insight, state }: { insight: InsightEvent; state: HealthState }) {
+export function InsightCardView({
+  insight,
+  state,
+  onSimulate,
+}: {
+  insight: InsightEvent;
+  state: HealthState;
+  onSimulate?: () => void;
+}) {
   const c = insight.card;
   return (
     <motion.article
@@ -106,6 +114,15 @@ export function InsightCardView({ insight, state }: { insight: InsightEvent; sta
             </p>
           )}
         </div>
+        {onSimulate && state === "alarm" && (
+          <button
+            onClick={onSimulate}
+            className="mt-3 w-full rounded-control border px-3 py-2 text-sm font-semibold"
+            style={{ borderColor: "var(--color-accent-500)", color: "var(--color-accent-500)" }}
+          >
+            Simulate the fix: see the yield it saves
+          </button>
+        )}
         {c.evidence.length > 0 && (
           <div className="mt-3 flex flex-wrap items-center gap-1.5">
             <span className="text-xs text-text-muted">Based on</span>
@@ -152,8 +169,8 @@ export function PonrCountdown({ remainingH, totalH, size = 168 }: { remainingH: 
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="num text-3xl font-semibold">{fmtHours(remainingH)}</span>
-          <span className="text-xs text-text-secondary">to point of no return</span>
+          <span className="num text-3xl font-semibold">{remainingH > 0 ? fmtHours(remainingH) : "Passed"}</span>
+          <span className="text-xs text-text-secondary">{remainingH > 0 ? "to point of no return" : "act now to limit the loss"}</span>
           <span className="text-[11px] text-text-muted">model estimate</span>
         </div>
       </div>

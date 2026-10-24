@@ -298,3 +298,111 @@ function OxygenSafety({ current, next, target }: { current: number; next: number
     </div>
   );
 }
+
+export interface WhatIf {
+  now_h: number;
+  target_kg: number;
+  ponr_h: number | null;
+  hours_left: number | null;
+  passed: boolean;
+  if_unchanged_kg: number | null;
+  curve: { fix_h: number; p10: number; p50: number; p90: number }[];
+}
+
+/** Recovered final yield if the fix is applied at each future hour, vs doing nothing. */
+export function WhatIfView({ reactorId, tick }: { reactorId: string; tick: TickEvent | null }) {
+  const bucket = tick ? Math.floor(tick.t_h) : 0;
+  const q = useQuery({
+    queryKey: ["whatif", reactorId, bucket],
+    queryFn: () => api.whatif(reactorId),
+    staleTime: 30_000,
+  });
+  if (q.isLoading) return <Skeleton className="h-48" />;
+  if (q.isError || !q.data || q.data.curve.length < 2) return <p className="text-sm text-text-muted">What-if is unavailable right now.</p>;
+  const d = q.data;
+  const W = 640;
+  const H = 210;
+  const P = { l: 52, r: 16, t: 14, b: 32 };
+  const xs0 = d.curve[0]!.fix_h;
+  const xs1 = d.curve[d.curve.length - 1]!.fix_h;
+  const vals = d.curve.flatMap((c) => [c.p10, c.p90]).concat(d.if_unchanged_kg ?? [], d.target_kg);
+  const lo = Math.min(...vals) * 0.85;
+  const hi = Math.max(...vals) * 1.05;
+  const x = (v: number) => P.l + ((v - xs0) / Math.max(xs1 - xs0, 1e-6)) * (W - P.l - P.r);
+  const y = (v: number) => P.t + (1 - (v - lo) / (hi - lo)) * (H - P.t - P.b);
+  const band =
+    d.curve.map((c, i) => `${i ? "L" : "M"}${x(c.fix_h)},${y(c.p90)}`).join(" ") +
+    " " +
+    [...d.curve].reverse().map((c) => `L${x(c.fix_h)},${y(c.p10)}`).join(" ") +
+    " Z";
+  const line = d.curve.map((c, i) => `${i ? "L" : "M"}${x(c.fix_h)},${y(c.p50)}`).join(" ");
+  const now = d.curve[0]!;
+  const headline =
+    d.hours_left === null
+      ? "The batch stays recoverable for at least the next three days."
+      : d.hours_left <= 0.5
+        ? "Act now: waiting costs more than 10% of what is still recoverable."
+        : `About ${fmt(d.hours_left, 0)} h before the point of no return.`;
+  return (
+    <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+      <div className="space-y-3">
+        <p className="text-sm font-semibold">{headline}</p>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-control bg-bg-inset px-3 py-2">
+            <div className="text-[11px] text-text-muted">Fix it now</div>
+            <div className="display-num text-lg font-semibold" style={{ color: "var(--color-accent-500)" }}>
+              {fmtInt(now.p50)} kg
+            </div>
+          </div>
+          <div className="rounded-control bg-bg-inset px-3 py-2">
+            <div className="text-[11px] text-text-muted">Do nothing</div>
+            <div className="display-num text-lg font-semibold" style={{ color: "var(--color-state-alarm)" }}>
+              {d.if_unchanged_kg === null ? "—" : `${fmtInt(d.if_unchanged_kg)} kg`}
+            </div>
+          </div>
+        </div>
+        <p className="text-xs text-text-muted">
+          Model estimate: from the fix time on, the batch is assumed to behave like its nearest healthy batches (matched on biomass
+          and product so far), scaled by the biomass it has left. Point of no return = 90% of the fix-now outcome.
+        </p>
+      </div>
+      <figure className="m-0">
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Recovered final yield by fix time">
+          <path d={band} fill="var(--color-accent-glow)" />
+          <line x1={P.l} x2={W - P.r} y1={y(d.target_kg)} y2={y(d.target_kg)} stroke="var(--color-state-watch)" strokeDasharray="5 4" />
+          <text x={W - P.r} y={y(d.target_kg) - 6} textAnchor="end" fontSize="11" fill="var(--color-text-secondary)">
+            90% of fix-now
+          </text>
+          {d.if_unchanged_kg !== null && (
+            <>
+              <line x1={P.l} x2={W - P.r} y1={y(d.if_unchanged_kg)} y2={y(d.if_unchanged_kg)} stroke="var(--color-state-alarm)" strokeDasharray="2 4" />
+              <text x={P.l + 6} y={y(d.if_unchanged_kg) - 6} fontSize="11" fill="var(--color-state-alarm)">
+                do nothing
+              </text>
+            </>
+          )}
+          <path d={line} fill="none" stroke="var(--color-accent-500)" strokeWidth={2.5} />
+          {d.ponr_h !== null && (
+            <>
+              <line x1={x(d.ponr_h)} x2={x(d.ponr_h)} y1={P.t} y2={H - P.b} stroke="var(--color-state-alarm)" strokeWidth={1.5} />
+              <text x={x(d.ponr_h) + 6} y={P.t + 10} fontSize="11" fill="var(--color-state-alarm)">
+                point of no return
+              </text>
+            </>
+          )}
+          {[xs0, (xs0 + xs1) / 2, xs1].map((v) => (
+            <text key={v} x={x(v)} y={H - 10} textAnchor="middle" fontSize="11" fill="var(--color-text-muted)" className="num">
+              {fmt(v, 0)} h
+            </text>
+          ))}
+          {[lo, (lo + hi) / 2, hi].map((v) => (
+            <text key={v} x={P.l - 8} y={y(v) + 4} textAnchor="end" fontSize="11" fill="var(--color-text-muted)" className="num">
+              {fmtInt(v)}
+            </text>
+          ))}
+        </svg>
+        <figcaption className="text-center text-xs text-text-secondary">Final yield (kg) if the fix is applied at batch hour…</figcaption>
+      </figure>
+    </div>
+  );
+}

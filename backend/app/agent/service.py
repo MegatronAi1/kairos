@@ -109,11 +109,15 @@ class AgentService:
         for block in res.get("output", {}).get("message", {}).get("content", []):
             if "toolUse" in block:
                 data = block["toolUse"]["input"]
+                fallback = template_card(alarm)
+                fields = {
+                    k: str(data.get(k) or getattr(fallback, k))
+                    for k in ("title", "summary", "action", "expected_effect")
+                }
+                conf = data.get("confidence")
                 card = InsightCard(
-                    **{
-                        k: data[k]
-                        for k in ("title", "summary", "action", "expected_effect", "confidence")
-                    },
+                    **fields,
+                    confidence=conf if conf in ("low", "medium", "high") else "medium",
                     ponr_hours=alarm.ponr_hours,
                     evidence=["fault_detector", "yield_model", "energy_model"],
                 )

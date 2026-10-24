@@ -9,7 +9,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { EmptyState, ProvenanceChip, Skeleton, StatusPill } from "@/components/primitives";
 import { InsightCardView, PonrCountdown, Sparkline } from "@/components/readouts";
 import { TimelineScrubber } from "@/components/Timeline";
-import { EnergyPanel, ForecastFan, Gauge, HealthRing } from "@/components/viz";
+import { EnergyPanel, ForecastFan, Gauge, HealthRing, WhatIfView } from "@/components/viz";
 import { api } from "@/lib/api/client";
 import { fmt, fmtInt, stateVar, strategyLabel, valueOf } from "@/lib/format";
 import { statusSentence } from "@/lib/narrate";
@@ -17,7 +17,7 @@ import { useProcessStore } from "@/lib/process";
 import { useLive } from "@/lib/store/live";
 import { ReactorScene } from "@/three/Stage";
 
-type Detail = "process" | "forecast" | "energy";
+type Detail = "process" | "forecast" | "energy" | "whatif";
 
 /** A live summary tile in the instrument dock; clicking it opens the matching detail view. */
 function DockTile({
@@ -241,6 +241,7 @@ export default function ReactorPage() {
                           ["process", "Process"],
                           ["forecast", "Yield forecast"],
                           ["energy", oxygenAlarm ? "Oxygen rescue" : "Energy vs oxygen"],
+                          ...(r.state !== "normal" ? ([["whatif", "What-if: fix timing"]] as [Detail, string][]) : []),
                         ] as [Detail, string][]
                       ).map(([d, label]) => (
                         <button
@@ -292,6 +293,8 @@ export default function ReactorPage() {
                         <p className="text-sm text-text-muted">The forecast starts once about 8% of the batch has run.</p>
                       ))}
 
+                    {detail === "whatif" && <WhatIfView reactorId={r.id} tick={tick} />}
+
                     {detail === "energy" && (
                       <ErrorBoundary title="Energy panel unavailable">
                         <EnergyPanel reactorId={r.id} tick={tick} mode={oxygenAlarm ? "rescue" : "energy"} layout="row" />
@@ -322,7 +325,7 @@ export default function ReactorPage() {
           <div className="max-h-[55%] shrink-0 space-y-4 overflow-y-auto px-5 pb-4">
             {ponrLeft !== null && ponr !== null && <PonrCountdown remainingH={ponrLeft} totalH={ponr} size={140} />}
             {r.insight && r.state !== "normal" ? (
-              <InsightCardView insight={r.insight} state={r.state} />
+              <InsightCardView insight={r.insight} state={r.state} onSimulate={() => open("whatif")} />
             ) : (
               <div className="rounded-card border border-border-subtle bg-bg-surface p-4">
                 <div className="text-sm font-semibold">All clear</div>

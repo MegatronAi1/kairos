@@ -164,7 +164,7 @@ class ReplayEngine:
             previous_state=reactor.state,
             severity=SEVERITY[new_state],
             contributors=tick.health.top_contributors if tick.health else [],
-            ponr_hours=None,
+            ponr_hours=self._ponr_hours(reactor) if new_state == "alarm" else None,
         )
         reactor.state = new_state
         if new_state == "alarm":
@@ -174,6 +174,22 @@ class ReplayEngine:
         log.info("health_transition", reactor=reactor.id, state=new_state, t_h=tick.t_h)
         if self.on_transition is not None:
             await self.on_transition(alarm)
+
+    def _ponr_hours(self, reactor: Reactor) -> float | None:
+        """Hours left to the point of no return, if the engines can estimate it."""
+        estimate = getattr(self.pipeline.engines, "ponr", None)
+        if estimate is None:
+            return None
+        try:
+            result = estimate(reactor.batch, reactor.batch.index_at(reactor.t_h))
+        except Exception:  # an estimate must never break the alarm path
+            log.exception("ponr_failed", reactor=reactor.id)
+            return None
+        return (
+            None
+            if result is None or result.hours_left is None
+            else round(float(result.hours_left), 1)
+        )
 
     def publish_insight(self, insight: InsightEvent) -> None:
         reactor = self.reactors.get(insight.reactor_id)
