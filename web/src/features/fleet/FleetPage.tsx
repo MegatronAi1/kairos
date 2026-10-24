@@ -1,8 +1,9 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { ErrorState, Skeleton, StatusPill } from "@/components/primitives";
 import { HealthRing } from "@/components/viz";
 import { statusSentence } from "@/lib/narrate";
+import { FAMILY_LABEL, FIT_LABEL, useSelectedProcess } from "@/lib/process";
 import { fmt, fmtInt, stateVar, strategyLabel, valueOf } from "@/lib/format";
 import { sortedReactors, useLive } from "@/lib/store/live";
 import { FleetScene } from "@/three/Stage";
@@ -27,6 +28,7 @@ export function FleetPage() {
   return (
     <div className="relative h-full">
       <h1 className="sr-only">Fleet</h1>
+      <ProcessBanner />
       <div className="absolute inset-0">
         <FleetScene reactors={reactors} onSelect={(id) => navigate(`/reactor/${id}`)} />
       </div>
@@ -77,5 +79,28 @@ export function FleetPage() {
         })}
       </div>
     </div>
+  );
+}
+
+function ProcessBanner() {
+  const p = useSelectedProcess();
+  if (!p) return null;
+  return (
+    <Link
+      to="/process"
+      className="absolute left-5 top-5 z-10 max-w-md rounded-card border border-border-subtle p-4 backdrop-blur hover:border-border-strong"
+      style={{ background: "color-mix(in srgb, var(--color-bg-surface) 85%, transparent)" }}
+    >
+      <div className="overline">{FAMILY_LABEL[p.family]}</div>
+      <div className="display mt-0.5 text-2xl font-semibold">{p.name}</div>
+      <div className="text-sm text-text-secondary">
+        {p.example?.company ? `${p.example.company} · ` : ""}
+        <i>{p.organism}</i>
+      </div>
+      <div className="mt-2 text-xs text-text-muted">
+        Reactors replay the IndPenSim fed-batch benchmark · {p.benchmark_fit ? FIT_LABEL[p.benchmark_fit].toLowerCase() : "fit pending"} for this
+        process. Open the process view →
+      </div>
+    </Link>
   );
 }

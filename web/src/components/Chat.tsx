@@ -4,6 +4,7 @@ import Markdown from "react-markdown";
 
 import { EvidenceChip } from "@/components/primitives";
 import { chatStream } from "@/lib/api/client";
+import { useSelectedProcess } from "@/lib/process";
 
 interface Msg {
   role: "user" | "assistant";
@@ -32,6 +33,7 @@ export function Chat({ reactorId, suggestions }: { reactorId?: string; suggestio
   const [activity, setActivity] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
   const end = useRef<HTMLDivElement>(null);
+  const process = useSelectedProcess();
 
   useEffect(() => {
     end.current?.scrollIntoView?.({ block: "end" });
@@ -55,7 +57,7 @@ export function Chat({ reactorId, suggestions }: { reactorId?: string; suggestio
       setMessages((ms) => [...ms.slice(0, -1), fn(ms[ms.length - 1]!)]);
     try {
       const payload = history.filter((m) => !m.error).map(({ role, content }) => ({ role, content }));
-      for await (const ev of chatStream(payload, reactorId, abort.current.signal)) {
+      for await (const ev of chatStream(payload, reactorId, abort.current.signal, process?.id)) {
         if (ev.type === "text") {
           setActivity(null);
           update((m) => ({ ...m, content: m.content + ev.delta }));

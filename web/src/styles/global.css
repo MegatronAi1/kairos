@@ -106,3 +106,16 @@ h2 {
 .prose-kairos ul { margin: 0 0 0.5rem; padding-left: 1.1rem; list-style: disc; }
 .prose-kairos strong { font-weight: 600; color: var(--color-text-primary); }
 .prose-kairos code { font-family: var(--font-family-mono); font-size: 0.9em; }
+
+/* Animated flows in process diagrams. */
+@keyframes kflow {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+.kflow {
+  animation: kflow 1.1s linear infinite;
+}
+.kflow-rev {
+  animation: kflow 1.1s linear infinite reverse;
+}

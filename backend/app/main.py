@@ -19,6 +19,7 @@ from app.api import (
     routes_batches,
     routes_meta,
     routes_metrics,
+    routes_processes,
     routes_reactors,
     ws,
 )
@@ -128,7 +129,14 @@ def create_app(settings: Settings | None = None, *, autostart: bool = True) -> F
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    for module in (routes_meta, routes_reactors, routes_batches, routes_agent, routes_metrics):
+    for module in (
+        routes_meta,
+        routes_reactors,
+        routes_batches,
+        routes_agent,
+        routes_metrics,
+        routes_processes,
+    ):
         app.include_router(module.router, prefix=API_PREFIX)
     app.include_router(ws.router)
     return app

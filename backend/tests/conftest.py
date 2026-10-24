@@ -70,11 +70,18 @@ def state() -> AppState:
 
 @pytest.fixture
 def client(state: AppState) -> Iterator[TestClient]:
-    from app.api import routes_batches, routes_meta, routes_metrics, routes_reactors, ws
+    from app.api import (
+        routes_batches,
+        routes_meta,
+        routes_metrics,
+        routes_processes,
+        routes_reactors,
+        ws,
+    )
     from app.main import API_PREFIX
 
     app = FastAPI()
-    for module in (routes_meta, routes_reactors, routes_batches, routes_metrics):
+    for module in (routes_meta, routes_reactors, routes_batches, routes_metrics, routes_processes):
         app.include_router(module.router, prefix=API_PREFIX)
     app.include_router(ws.router)
     app.state.kairos = state

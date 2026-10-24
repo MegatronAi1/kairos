@@ -23,6 +23,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     messages: list[ChatMessage] = Field(min_length=1, max_length=30)
     reactor_id: str | None = None
+    process_id: str | None = None
 
 
 @router.post("/chat")
@@ -33,7 +34,9 @@ async def chat(body: ChatRequest, state: AppState = Depends(get_state)) -> Event
     agent = state.agent
 
     async def events() -> AsyncIterator[dict[str, str]]:
-        async for ev in agent.chat([m.model_dump() for m in body.messages], body.reactor_id):
+        async for ev in agent.chat(
+            [m.model_dump() for m in body.messages], body.reactor_id, body.process_id
+        ):
             yield {"data": orjson.dumps(ev).decode()}
 
     return EventSourceResponse(events(), ping=15)

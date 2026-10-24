@@ -75,6 +75,7 @@ export async function* chatStream(
   messages: { role: "user" | "assistant"; content: string }[],
   reactorId: string | undefined,
   signal?: AbortSignal,
+  processId?: string,
 ): AsyncGenerator<ChatEvent> {
   const res = await fetch(apiUrl("/agent/chat"), {
     method: "POST",
@@ -83,7 +84,7 @@ export async function* chatStream(
       "Content-Type": "application/json",
       ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}),
     },
-    body: JSON.stringify({ messages, reactor_id: reactorId }),
+    body: JSON.stringify({ messages, reactor_id: reactorId, process_id: processId }),
   });
   if (!res.ok || !res.body) {
     yield { type: "error", message: `Copilot unavailable (${res.status}).` };

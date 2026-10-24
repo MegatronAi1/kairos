@@ -1,11 +1,12 @@
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Activity, BookOpen, FlaskConical, LayoutGrid, Monitor, Moon, Sun } from "lucide-react";
+import { Activity, BookOpen, Factory, FlaskConical, LayoutGrid, Monitor, Moon, Sun } from "lucide-react";
 import { lazy, Suspense } from "react";
 import { BrowserRouter, NavLink, Route, Routes } from "react-router-dom";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { Skeleton } from "@/components/primitives";
+import { Skeleton, Tip } from "@/components/primitives";
+import { ProcessSelector } from "@/components/ProcessSelector";
 import { FleetPage } from "@/features/fleet/FleetPage";
 import { useLive } from "@/lib/store/live";
 import { setThemePref, useThemePref, useThemeSync, type ThemePref } from "@/lib/theme";
@@ -14,6 +15,7 @@ import { useLiveSocket } from "@/lib/ws/socket";
 const ReactorPage = lazy(() => import("@/features/reactor/ReactorPage"));
 const EvidencePage = lazy(() => import("@/features/evidence/EvidencePage"));
 const MethodPage = lazy(() => import("@/features/method/MethodPage"));
+const ProcessPage = lazy(() => import("@/features/process/ProcessPage"));
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: 1 } } });
 
@@ -75,6 +77,9 @@ function Shell() {
           <NavLink to="/" end className={link}>
             <LayoutGrid size={15} /> Fleet
           </NavLink>
+          <NavLink to="/process" className={link}>
+            <Factory size={15} /> Process
+          </NavLink>
           <NavLink to="/evidence" className={link}>
             <Activity size={15} /> Evidence
           </NavLink>
@@ -82,10 +87,13 @@ function Shell() {
             <BookOpen size={15} /> Method
           </NavLink>
         </nav>
+        <ProcessSelector />
         <div className="ml-auto flex items-center gap-4">
-          <span className="flex items-center gap-1.5 text-xs text-text-muted">
-            <FlaskConical size={13} /> IndPenSim · simulated data
-          </span>
+          <Tip content="Live reactors replay IndPenSim, a published industrial penicillin fed-batch simulator (synthetic data).">
+            <span tabIndex={0} className="flex items-center gap-1.5 text-xs text-text-muted">
+              <FlaskConical size={13} /> Benchmark data: IndPenSim
+            </span>
+          </Tip>
           <ConnectionIndicator />
           <ThemeToggle />
         </div>
@@ -98,6 +106,7 @@ function Shell() {
             <Route path="/reactor/:id" element={<ReactorPage />} />
             <Route path="/evidence" element={<EvidencePage />} />
             <Route path="/method" element={<MethodPage />} />
+            <Route path="/process" element={<ProcessPage />} />
           </Routes>
         </Suspense>
         </ErrorBoundary>

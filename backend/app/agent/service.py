@@ -18,6 +18,7 @@ from app.agent.bedrock import ConverseClient, LlmUnavailable
 from app.agent.templates import template_card
 from app.agent.tools import EVIDENCE, ToolBox, bedrock_tool_config
 from app.core.logging import log
+from app.processes.catalog import get_process, summary
 from app.schemas import AlarmEvent, InsightCard
 
 PROMPT_PATH = Path(__file__).parent / "prompts" / "system.md"
@@ -123,7 +124,7 @@ class AgentService:
 
     # --- chat ------------------------------------------------------------------
     async def chat(
-        self, messages: list[Json], reactor_id: str | None = None
+        self, messages: list[Json], reactor_id: str | None = None, process_id: str | None = None
     ) -> AsyncIterator[Json]:
         """Yields {"type": "text"|"tool"|"evidence"|"done"|"error", ...}."""
         if not self.enabled or self.client is None:
@@ -149,6 +150,14 @@ class AgentService:
                 f"\n\nThe operator is looking at reactor {reactor_id}. Live snapshot (counts as "
                 "tool results; call tools only for anything not covered here):\n"
                 + json.dumps(snapshot, default=str)
+            )
+        process = get_process(process_id) if process_id else None
+        if process:
+            system += (
+                "\n\nThe operator has selected this alternative-protein process as context: "
+                + summary(process)
+                + " Live reactor data is the IndPenSim penicillin benchmark; say so when you transfer "
+                "conclusions to the selected process, and do not invent process numbers beyond this summary."
             )
         evidence: list[str] = (
             ["live_sensors", "fault_detector", "yield_model"] if reactor_id else []
