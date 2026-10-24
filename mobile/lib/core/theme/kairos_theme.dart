@@ -2,21 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:kairos_pager/core/models/models.dart';
 import 'package:kairos_pager/core/theme/tokens.dart';
 
-/// Display face for headings and hero numbers (Space Grotesk, OFL, bundled).
-const kDisplayFont = 'SpaceGrotesk';
+/// Display face for headings and hero numbers (Manrope, OFL, bundled static weights).
+const kDisplayFont = 'Manrope';
+
+/// Rounder geometry for the app chrome (cards, sheets, controls).
+abstract final class KR {
+  static const double card = 20;
+  static const double tile = 16;
+  static const double control = 14;
+  static const double pill = 999;
+}
+
+/// Soft card shadow in light mode; none in dark mode (borders carry the edge).
+List<BoxShadow> cardShadow() => KColors.palette == KPalette.light
+    ? const [BoxShadow(color: Color(0x0F0E1620), blurRadius: 18, offset: Offset(0, 6))]
+    : const [];
 
 /// Text styles. Variable fonts need an explicit weight axis.
 abstract final class KText {
   /// Headings, reactor IDs and hero numbers.
-  static TextStyle display(double size, {FontWeight weight = FontWeight.w600, Color? color}) => TextStyle(
+  static TextStyle display(double size, {FontWeight weight = FontWeight.w700, Color? color}) => TextStyle(
     fontFamily: kDisplayFont,
     fontSize: size,
     fontWeight: weight,
-    fontVariations: [FontVariation.weight(weight.value.toDouble())],
     fontFeatures: const [FontFeature.tabularFigures()],
     color: color ?? KColors.textPrimary,
-    height: 1.1,
-    letterSpacing: -0.3,
+    height: 1.15,
+    letterSpacing: size >= 20 ? -0.4 : -0.1,
   );
 
   static TextStyle ui(double size, {FontWeight weight = FontWeight.w400, Color? color}) => TextStyle(
@@ -92,7 +104,25 @@ ThemeData kairosTheme(Brightness brightness) {
       backgroundColor: KColors.bgBase,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
-      titleTextStyle: KText.ui(KSize.lg, weight: FontWeight.w500),
+      titleTextStyle: KText.display(KSize.xl),
+      centerTitle: false,
+    ),
+    segmentedButtonTheme: SegmentedButtonThemeData(
+      style: SegmentedButton.styleFrom(
+        selectedBackgroundColor: KColors.accentGlow,
+        selectedForegroundColor: KColors.accentX500,
+        foregroundColor: KColors.textSecondary,
+        side: BorderSide(color: KColors.borderSubtle),
+        textStyle: KText.ui(KSize.sm, weight: FontWeight.w600),
+      ),
+    ),
+    chipTheme: ChipThemeData(
+      backgroundColor: KColors.bgSurface,
+      selectedColor: KColors.accentGlow,
+      side: BorderSide(color: KColors.borderSubtle),
+      labelStyle: KText.ui(KSize.sm, weight: FontWeight.w500, color: KColors.textSecondary),
+      shape: const StadiumBorder(),
+      showCheckmark: false,
     ),
     dividerTheme: DividerThemeData(color: KColors.borderSubtle, thickness: 1, space: 1),
     cardTheme: CardThemeData(
@@ -100,7 +130,7 @@ ThemeData kairosTheme(Brightness brightness) {
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: const BorderRadius.all(Radius.circular(KRadius.card)),
+        borderRadius: const BorderRadius.all(Radius.circular(KR.card)),
         side: BorderSide(color: KColors.borderSubtle),
       ),
     ),
@@ -108,15 +138,15 @@ ThemeData kairosTheme(Brightness brightness) {
       filled: true,
       fillColor: KColors.bgInset,
       border: OutlineInputBorder(
-        borderRadius: const BorderRadius.all(Radius.circular(KRadius.control)),
+        borderRadius: const BorderRadius.all(Radius.circular(KR.control)),
         borderSide: BorderSide(color: KColors.borderSubtle),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: const BorderRadius.all(Radius.circular(KRadius.control)),
+        borderRadius: const BorderRadius.all(Radius.circular(KR.control)),
         borderSide: BorderSide(color: KColors.borderSubtle),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: const BorderRadius.all(Radius.circular(KRadius.control)),
+        borderRadius: const BorderRadius.all(Radius.circular(KR.control)),
         borderSide: BorderSide(color: KColors.accentX500, width: 1.5),
       ),
       labelStyle: TextStyle(color: KColors.textSecondary),
@@ -125,25 +155,26 @@ ThemeData kairosTheme(Brightness brightness) {
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: KColors.accentX500,
-        foregroundColor: KColors.bgBase,
-        minimumSize: const Size.fromHeight(48),
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(KRadius.control))),
-        textStyle: KText.ui(KSize.md, weight: FontWeight.w500),
+        foregroundColor: dark ? KColors.bgBase : Colors.white,
+        minimumSize: const Size.fromHeight(52),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(KR.control))),
+        textStyle: KText.ui(KSize.lg, weight: FontWeight.w600),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: KColors.textPrimary,
-        minimumSize: const Size.fromHeight(48),
+        minimumSize: const Size.fromHeight(52),
         side: BorderSide(color: KColors.borderStrong),
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(KRadius.control))),
-        textStyle: KText.ui(KSize.md, weight: FontWeight.w500),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(KR.control))),
+        textStyle: KText.ui(KSize.lg, weight: FontWeight.w600),
       ),
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: KColors.bgElevated,
       contentTextStyle: KText.ui(KSize.md),
       behavior: SnackBarBehavior.floating,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(KR.control))),
     ),
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: {TargetPlatform.android: FadeForwardsPageTransitionsBuilder()},

@@ -122,7 +122,7 @@ async def test_alarm_card_falls_back_to_none(state: AppState, tmp_path: Path) ->
 
 def test_tool_specs_valid_and_dispatch_handles_unknowns(state: AppState, tmp_path: Path) -> None:
     cfg = bedrock_tool_config()
-    assert len(cfg["tools"]) == len(SPECS) == 9
+    assert len(cfg["tools"]) == len(SPECS) == 10
     box = ToolBox(state, tmp_path)
     assert "error" in box.call("nope", {})
     assert "error" in box.call("get_reactor_state", {"reactor_id": "R9"})

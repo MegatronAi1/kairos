@@ -1,4 +1,8 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
+import 'package:kairos_pager/core/models/chat.dart';
 import 'package:kairos_pager/core/models/models.dart';
 import 'package:kairos_pager/core/models/plant.dart';
 import 'package:kairos_pager/core/models/process.dart';
@@ -108,6 +112,72 @@ class KairosApi {
   Future<ProcessDetail> process(String id) async {
     final res = await _dio.get<Map<String, dynamic>>('processes/$id');
     return ProcessDetail.fromJson(res.data!);
+  }
+
+  /// Ask Kairos: streams the agent's answer (Server-Sent Events from `POST agent/chat`).
+  Stream<ChatEvent> chat(
+    List<ChatMessage> messages, {
+    String? reactorId,
+    String? processId,
+    CancelToken? cancel,
+  }) async* {
+    if (pairing.demo) {
+      yield* _demoChat(reactorId);
+      return;
+    }
+    final res = await _dio.post<ResponseBody>(
+      'agent/chat',
+      data: {
+        'messages': [for (final m in messages) m.toJson()],
+        'reactor_id': reactorId,
+        'process_id': processId,
+      },
+      cancelToken: cancel,
+      options: Options(
+        responseType: ResponseType.stream,
+        receiveTimeout: const Duration(seconds: 120),
+        headers: {'Accept': 'text/event-stream'},
+      ),
+    );
+    final pending = StringBuffer();
+    final lines = res.data!.stream.cast<List<int>>().transform(utf8.decoder);
+    await for (final chunk in lines) {
+      pending.write(chunk.replaceAll('\r\n', '\n'));
+      while (true) {
+        final text = pending.toString();
+        final cut = text.indexOf('\n\n');
+        if (cut < 0) break;
+        final frame = text.substring(0, cut);
+        pending
+          ..clear()
+          ..write(text.substring(cut + 2));
+        final data = frame
+            .split('\n')
+            .where((l) => l.startsWith('data:'))
+            .map((l) => l.substring(5).trim())
+            .join();
+        if (data.isEmpty) continue;
+        final ev = ChatEvent.fromJson(jsonDecode(data) as Json);
+        if (ev != null) yield ev;
+        if (ev is ChatDone) return;
+      }
+    }
+  }
+
+  Stream<ChatEvent> _demoChat(String? reactorId) async* {
+    yield const ChatTool('get_reactor_status');
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    final who = reactorId ?? 'The demo plant';
+    final answer =
+        '$who is replaying offline demo data, so this is a sample answer. '
+        'Connect to a Kairos server to ask the copilot about live reactors.';
+    final words = answer.split(' ');
+    for (final w in words) {
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      yield ChatText('$w ');
+    }
+    yield const ChatEvidence(['demo data']);
+    yield const ChatDone();
   }
 
   Future<void> acknowledge(String reactorId, {String by = 'pager'}) async {

@@ -14,6 +14,7 @@ Future<void> showProcessPicker(BuildContext context, WidgetRef ref) {
   final current = ref.read(selectedProcessProvider)?.id;
   return showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: KColors.bgElevated,
     shape: const RoundedRectangleBorder(

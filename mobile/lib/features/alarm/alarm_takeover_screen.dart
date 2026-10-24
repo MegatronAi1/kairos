@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kairos_pager/core/fleet_providers.dart';
 import 'package:kairos_pager/core/models/models.dart';
 import 'package:kairos_pager/core/providers.dart';
 import 'package:kairos_pager/core/theme/kairos_theme.dart';
 import 'package:kairos_pager/core/theme/tokens.dart';
+import 'package:kairos_pager/features/reactor/reactor_detail_screen.dart' show expectedText;
 import 'package:kairos_pager/widgets/format.dart';
 import 'package:kairos_pager/widgets/gauge.dart';
 import 'package:kairos_pager/widgets/ponr_countdown.dart';
@@ -31,7 +33,7 @@ class _AlarmTakeoverScreenState extends ConsumerState<AlarmTakeoverScreen>
     super.dispose();
   }
 
-  void _close() => context.canPop() ? context.pop() : context.go('/plant');
+  void _close() => context.canPop() ? context.pop() : context.go('/home');
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +87,7 @@ class _AlarmTakeoverScreenState extends ConsumerState<AlarmTakeoverScreen>
                               color: KColors.stateAlarm,
                               borderRadius: BorderRadius.circular(KRadius.full),
                             ),
-                            child: Text('ALARM', style: KText.overline(color: KColors.bgBase)),
+                            child: Text('ALARM', style: KText.overline(color: Colors.white)),
                           ),
                           const SizedBox(width: KSpace.s3),
                           Expanded(
@@ -101,7 +103,7 @@ class _AlarmTakeoverScreenState extends ConsumerState<AlarmTakeoverScreen>
                         ],
                       ),
                       const SizedBox(height: KSpace.s6),
-                      Text(title, style: KText.display(KSize.x3xl + 4)),
+                      Text(title, style: KText.display(KSize.x3xl + 2, weight: FontWeight.w800)),
                       if (card?.summary != null) ...[
                         const SizedBox(height: KSpace.s2),
                         Text(card!.summary, style: KText.ui(KSize.lg, color: KColors.textSecondary)),
@@ -118,18 +120,18 @@ class _AlarmTakeoverScreenState extends ConsumerState<AlarmTakeoverScreen>
                       const Spacer(),
                       Text('Do this', style: KText.overline(color: KColors.accentX500)),
                       const SizedBox(height: KSpace.s1),
-                      Text(action, style: KText.display(KSize.x2xl + 2, weight: FontWeight.w500)),
+                      Text(action, style: KText.display(KSize.xl + 2)),
                       if (card != null && card.expectedEffect.isNotEmpty) ...[
                         const SizedBox(height: KSpace.s1),
                         Text(
-                          'Expected: ${card.expectedEffect} (model estimate)',
+                          expectedText(card.expectedEffect),
                           style: KText.ui(KSize.md, color: KColors.textSecondary),
                         ),
                       ],
                       const SizedBox(height: KSpace.s8),
                       FilledButton(
                         onPressed: () async {
-                          fireAndForget(ref.read(reactorsProvider.notifier).acknowledge(widget.reactorId));
+                          fireAndForget(ref.read(alertsProvider.notifier).acknowledge(widget.reactorId));
                           _close();
                         },
                         child: const Text('Acknowledge'),

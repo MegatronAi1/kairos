@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kairos_pager/app/router.dart';
+import 'package:kairos_pager/core/fleet_providers.dart';
 import 'package:kairos_pager/core/models/models.dart';
 import 'package:kairos_pager/core/notifications/alarm_alerts.dart';
 import 'package:kairos_pager/core/providers.dart';
@@ -77,7 +78,8 @@ class _KairosAppState extends ConsumerState<KairosApp> with WidgetsBindingObserv
         if (e != null) _onAlarm(e);
       })
       // Keep the reactor fold alive app-wide so no event is missed between screens.
-      ..watch(reactorsProvider);
+      ..watch(reactorsProvider)
+      ..watch(alertsProvider);
     final mode = ref.watch(themeModeProvider);
     final platform = WidgetsBinding.instance.platformDispatcher.platformBrightness;
     final brightness = switch (mode) {

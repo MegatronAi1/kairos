@@ -155,6 +155,12 @@ class AgentService:
                 "tool results; call tools only for anything not covered here):\n"
                 + json.dumps(snapshot, default=str)
             )
+        else:
+            system += (
+                "\n\nThe operator is asking about the whole fleet. Fleet snapshot (counts as a "
+                "list_fleet tool result):\n"
+                + json.dumps(self.tools.call("list_fleet", {}), default=str)
+            )
         process = get_process(process_id) if process_id else None
         if process:
             system += (

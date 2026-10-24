@@ -19,6 +19,7 @@ Json = dict[str, Any]
 
 EVIDENCE: dict[str, str] = {
     "get_reactor_state": "live_sensors",
+    "list_fleet": "live_sensors",
     "predict_final_yield": "yield_model",
     "explain_drivers": "why_engine",
     "diagnose_alarm": "fault_detector",
@@ -31,11 +32,16 @@ EVIDENCE: dict[str, str] = {
 
 _REACTOR = {
     "type": "object",
-    "properties": {"reactor_id": {"type": "string", "description": "Reactor slot, e.g. R2"}},
+    "properties": {"reactor_id": {"type": "string", "description": "Reactor ID, e.g. PUN-R2"}},
     "required": ["reactor_id"],
 }
 
 SPECS: list[Json] = [
+    {
+        "name": "list_fleet",
+        "description": "Every reactor in the company: ID, plant, process, health state, health score, yield forecast as % of a typical batch, dissolved oxygen and agitation+aeration power. Use it for fleet-wide questions.",
+        "schema": {"type": "object", "properties": {}},
+    },
     {
         "name": "get_reactor_state",
         "description": "Latest sensors, derived signals (power, OUR, kLa), batch progress, health state and forecast for a reactor.",
@@ -129,10 +135,41 @@ def _r(v: Any, nd: int = 2) -> Any:
 
 
 class ToolBox:
+    def list_fleet(self) -> Json:
+        plants = {p.id: p for p in getattr(self.state.tenant, "plants", [])}
+        rows: list[Json] = []
+        for r in self.state.engine.reactors.values():
+            t = r.last_tick
+            plant = plants.get(r.plant_id)
+            rows.append(
+                {
+                    "reactor_id": r.id,
+                    "plant": plant.name if plant else r.plant_id,
+                    "process_id": plant.process_id if plant else None,
+                    "state": r.state,
+                    "acknowledged": r.acknowledged,
+                    "health_score": round(t.health.score, 1) if t and t.health else None,
+                    "yield_kg_p50": round(t.forecast.p50) if t and t.forecast else None,
+                    "yield_vs_typical_pct": round(t.forecast.vs_golden_pct, 1)
+                    if t and t.forecast
+                    else None,
+                    "do_pct": t.sensors.get("do_pct") if t else None,
+                    "power_kw": t.derived.get("power_kw") if t else None,
+                    "progress_pct": round(t.progress * 100, 1) if t else None,
+                }
+            )
+        order = {"alarm": 0, "watch": 1, "normal": 2}
+        rows.sort(key=lambda x: (order.get(str(x["state"]), 3), x["health_score"] or 100))
+        return {
+            "reactors": rows,
+            "provenance": "live replay of held-out IndPenSim batches (synthetic)",
+        }
+
     def __init__(self, state: AppState, metrics_dir: Path) -> None:
         self.state = state
         self.metrics_dir = metrics_dir
         self._fns: dict[str, Callable[..., Json]] = {
+            "list_fleet": self.list_fleet,
             "get_reactor_state": self.get_reactor_state,
             "predict_final_yield": self.predict_final_yield,
             "explain_drivers": self.explain_drivers,

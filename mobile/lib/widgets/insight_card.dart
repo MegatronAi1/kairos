@@ -61,7 +61,7 @@ class InsightCardView extends StatelessWidget {
                           if (card.expectedEffect.isNotEmpty) ...[
                             const SizedBox(height: KSpace.s1),
                             Text(
-                              'Expected: ${card.expectedEffect} (model estimate)',
+                              'Expected: ${card.expectedEffect}${card.expectedEffect.toLowerCase().contains('model estimate') ? '' : ' (model estimate)'}',
                               style: KText.ui(KSize.sm, color: KColors.textSecondary),
                             ),
                           ],

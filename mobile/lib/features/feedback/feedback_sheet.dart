@@ -12,6 +12,7 @@ const feedbackCategories = {'bug': 'Bug', 'idea': 'Idea', 'data': 'Data/model', 
 Future<void> showFeedbackSheet(BuildContext context, {required String page, String? reactorId}) {
   return showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     showDragHandle: true,
     builder: (_) => FeedbackSheet(page: page, reactorId: reactorId),
