@@ -33,13 +33,7 @@ export function useLiveSocket(): void {
           for (const r of data.reactors) {
             void api
               .events(r.id)
-              .then((alarms) => {
-                useLive.getState().patch(r.id, { alarms });
-                // Open, unacknowledged alarms are shown again (quietly) after a reload.
-                const last = [...alarms].reverse().find((a) => a.state === "alarm");
-                if (r.state === "alarm" && !r.acknowledged && last)
-                  useToasts.getState().push(last, r.plant_id, r.last_insight?.card ?? null, false);
-              })
+              .then((alarms) => useLive.getState().patch(r.id, { alarms }))
               .catch(() => undefined);
           }
         }

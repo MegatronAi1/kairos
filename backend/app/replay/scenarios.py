@@ -31,6 +31,9 @@ class Plant:
     slots: dict[str, int]  # short reactor name -> held-out batch id
     start_h: float = 0.0
     commissioned: str = ""
+    # Healthy batch replayed between fault cycles, so a looping fault reactor
+    # alarms on one batch in `fault_every` (see ReplayEngine), not every batch.
+    relief: dict[str, int] = field(default_factory=dict)
 
     def reactor_id(self, short: str) -> str:
         return f"{self.code}-{short}"
@@ -60,6 +63,7 @@ DEMO_TENANT = Tenant(
             process_id="mycoprotein",
             # R2 replays batch 99: an aeration fault at 20 h, caught at 22 h.
             slots={"R1": 26, "R2": 99, "R3": 49, "R4": 85},
+            relief={"R2": 19},
             start_h=0.0,
             commissioned="2025",
         ),
@@ -100,6 +104,7 @@ DEMO_TENANT = Tenant(
             process_id="solein",
             # R1 replays batch 93: a temperature drift from about 70 h.
             slots={"R1": 93, "R2": 52},
+            relief={"R1": 20},
             start_h=20.0,
             commissioned="2026",
         ),
@@ -140,6 +145,7 @@ DEMO_TENANT = Tenant(
             process_id="whey",
             # R1 replays batch 95: a feed fault at 20 h.
             slots={"R1": 95, "R2": 4, "R3": 70},
+            relief={"R1": 36},
             start_h=130.0,
             commissioned="2026",
         ),

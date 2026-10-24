@@ -9,6 +9,8 @@ import { fmtHours, sensorLabel } from "@/lib/format";
 import { useLive } from "@/lib/store/live";
 import { useToasts, type AlarmToast } from "@/lib/store/toasts";
 
+const TOAST_MS = 20_000;
+
 /** Two short rising tones, synthesised (no audio file to load). */
 function chime(): void {
   try {
@@ -155,6 +157,15 @@ export function AlarmToaster() {
   const muted = useToasts((s) => s.muted);
   const setMuted = useToasts((s) => s.setMuted);
   const seen = useRef(new Set<string>());
+  const dismiss = useToasts((s) => s.dismiss);
+
+  // Toasts announce; they do not nag. Each hides after 20 s (the sidebar badge
+  // and the plant card keep showing the open alarm until it is acknowledged).
+  useEffect(() => {
+    if (!all.length) return;
+    const timers = all.map((t) => setTimeout(() => dismiss(t.key), Math.max(0, t.at + TOAST_MS - Date.now())));
+    return () => timers.forEach(clearTimeout);
+  }, [all, dismiss]);
 
   useEffect(() => {
     const fresh = all.filter((t) => !seen.current.has(t.key)); // sound even for the reactor on screen

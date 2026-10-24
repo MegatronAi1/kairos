@@ -103,3 +103,13 @@ async def test_simulated_fault_alarms_then_returns_home(state: AppState) -> None
     assert r.state == "alarm"
     await state.engine.next_batch(r)
     assert r.batch.batch_id == 1 and r.state == "normal"
+
+
+async def test_fault_reactor_replays_relief_batch_between_faults(state: AppState) -> None:
+    r = state.engine.reactors["R2"]
+    r.relief_batch = state.store.get(1)
+    seen = []
+    for _ in range(4):
+        await state.engine.next_batch(r)
+        seen.append(r.batch.batch_id)
+    assert seen == [1, 1, 1, 91]  # fault on every 4th batch only

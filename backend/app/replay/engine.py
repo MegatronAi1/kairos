@@ -44,6 +44,7 @@ class Reactor:
     last_insight: InsightEvent | None = None
     history: list[AlarmEvent] = field(default_factory=list)
     home_batch: Batch | None = None  # the scenario's batch; a simulated fault swaps it out
+    relief_batch: Batch | None = None  # healthy batch between fault cycles
     ended_at: float | None = None  # monotonic time the batch ended (for looping)
     cycle: int = 0  # completed batches since start
 
@@ -94,6 +95,7 @@ class ReplayEngine:
         # so a hosted demo keeps producing fresh batches and alarms.
         self.loop = True
         self.turnaround_s = 8.0
+        self.fault_every = 4  # a fault reactor replays its fault on every 4th batch
         self._task: asyncio.Task[None] | None = None
 
     # --- lifecycle -----------------------------------------------------------
@@ -110,8 +112,16 @@ class ReplayEngine:
                 rid = plant.reactor_id(short)
                 batch = self.store.get(bid)
                 t0 = min(plant.start_h, batch.t_end_h * 0.9)
+                relief = plant.relief.get(short)
                 self.reactors[rid] = Reactor(
-                    rid, batch, speed_h_per_s, plant.id, t0, t_h=t0, home_batch=batch
+                    rid,
+                    batch,
+                    speed_h_per_s,
+                    plant.id,
+                    t0,
+                    t_h=t0,
+                    home_batch=batch,
+                    relief_batch=self.store.get(relief) if relief is not None else None,
                 )
 
     def start(self) -> None:
@@ -154,10 +164,13 @@ class ReplayEngine:
         return await self.emit(reactor)
 
     async def next_batch(self, reactor: Reactor) -> None:
-        """Start the reactor's next batch: its scenario batch again, from 0 h."""
-        if reactor.home_batch is not None:
-            reactor.batch = reactor.home_batch
+        """Start the reactor's next batch from 0 h: its scenario batch, or the healthy
+        relief batch on cycles between faults."""
         reactor.cycle += 1
+        if reactor.relief_batch is not None and reactor.cycle % self.fault_every:
+            reactor.batch = reactor.relief_batch
+        elif reactor.home_batch is not None:
+            reactor.batch = reactor.home_batch
         reactor.t_h = 0.0
         reactor.running = True
         reactor.reset_state()
