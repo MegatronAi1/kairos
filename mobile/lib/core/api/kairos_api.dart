@@ -71,6 +71,13 @@ class KairosApi {
     return (res.data ?? const []).map((e) => PlantSummary.fromJson(e as Json)).toList();
   }
 
+  /// Alarm history of one reactor (state transitions since its batch started).
+  Future<List<AlarmEvent>> events(String reactorId) async {
+    if (pairing.demo) return const [];
+    final res = await _dio.get<List<dynamic>>('reactors/$reactorId/events');
+    return (res.data ?? const []).map((e) => AlarmEvent.fromJson(e as Json)).toList();
+  }
+
   Future<List<ReactorSummary>> reactors() async {
     if (pairing.demo) return const [];
     final res = await _dio.get<List<dynamic>>('reactors');
@@ -178,6 +185,16 @@ class KairosApi {
     }
     yield const ChatEvidence(['demo data']);
     yield const ChatDone();
+  }
+
+  /// Demo: replay a real fault batch on [reactorId]. Returns the expected
+  /// seconds until the detector raises the alarm.
+  Future<double> triggerFault(String reactorId, String kind) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      'demo/trigger-fault',
+      data: {'reactor_id': reactorId, 'kind': kind},
+    );
+    return (res.data?['expected_alarm_in_s'] as num?)?.toDouble() ?? 5;
   }
 
   Future<void> acknowledge(String reactorId, {String by = 'pager'}) async {

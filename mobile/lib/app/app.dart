@@ -6,7 +6,9 @@ import 'package:kairos_pager/app/router.dart';
 import 'package:kairos_pager/core/fleet_providers.dart';
 import 'package:kairos_pager/core/models/models.dart';
 import 'package:kairos_pager/core/notifications/alarm_alerts.dart';
+import 'package:kairos_pager/core/notifications/alarm_service.dart';
 import 'package:kairos_pager/core/providers.dart';
+import 'package:kairos_pager/core/storage/pairing_store.dart';
 import 'package:kairos_pager/core/theme/kairos_theme.dart';
 import 'package:kairos_pager/core/theme/theme_pref.dart';
 import 'package:kairos_pager/core/theme/tokens.dart';
@@ -28,9 +30,35 @@ class _KairosAppState extends ConsumerState<KairosApp> with WidgetsBindingObserv
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _lifecycle = AppLifecycleListener(
-      onStateChange: (s) => _foreground = s == AppLifecycleState.resumed,
+      onStateChange: (s) {
+        _foreground = s == AppLifecycleState.resumed;
+        AlarmService.setForeground(foreground: _foreground);
+      },
     );
     AlarmAlerts.instance.onTapReactor = (id) => ref.read(routerProvider).push('/alarm/$id');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncService(ref.read(pairingProvider));
+      final launched = AlarmAlerts.instance.launchReactor;
+      if (launched != null) {
+        AlarmAlerts.instance.launchReactor = null;
+        unawaited(ref.read(routerProvider).push('/alarm/$launched'));
+      }
+    });
+  }
+
+  /// Background alarms: a foreground service keeps its own live connection
+  /// while signed in to a real server (not in offline demo mode).
+  bool _serviceOn = false;
+
+  void _syncService(Pairing? p) {
+    final want = p != null && !p.demo;
+    if (want) {
+      _serviceOn = true;
+      unawaited(AlarmService.start(p.wsUri).then((_) => AlarmService.setForeground(foreground: _foreground)));
+    } else if (_serviceOn) {
+      _serviceOn = false;
+      unawaited(AlarmService.stop());
+    }
   }
 
   @override
@@ -57,7 +85,7 @@ class _KairosAppState extends ConsumerState<KairosApp> with WidgetsBindingObserv
         unawaited(router.push('/alarm/${e.reactorId}'));
       }
       fireAndForget(AlarmAlerts.instance.buzz());
-    } else {
+    } else if (!_serviceOn) {
       final card = ref.read(reactorProvider(e.reactorId))?.insight?.card;
       final plant = ref.read(plantOfReactorProvider(e.reactorId));
       fireAndForget(
@@ -73,6 +101,7 @@ class _KairosAppState extends ConsumerState<KairosApp> with WidgetsBindingObserv
   @override
   Widget build(BuildContext context) {
     ref
+      ..listen(pairingProvider, (_, next) => _syncService(next))
       ..listen(alarmEventsProvider, (_, next) {
         final e = next.value;
         if (e != null) _onAlarm(e);

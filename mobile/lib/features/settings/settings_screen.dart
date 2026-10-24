@@ -8,6 +8,7 @@ import 'package:kairos_pager/core/theme/kairos_theme.dart';
 import 'package:kairos_pager/core/theme/theme_pref.dart';
 import 'package:kairos_pager/core/theme/tokens.dart';
 import 'package:kairos_pager/core/ws/event_source.dart';
+import 'package:kairos_pager/features/alerts/simulate_sheet.dart';
 import 'package:kairos_pager/features/feedback/feedback_sheet.dart';
 import 'package:kairos_pager/features/process/process_picker.dart';
 import 'package:kairos_pager/widgets/ui.dart';
@@ -132,6 +133,12 @@ class SettingsScreen extends ConsumerWidget {
             const SectionLabel('Help'),
             _Group(
               children: [
+                _Tile(
+                  icon: LucideIcons.zap,
+                  title: 'Trigger a live alarm',
+                  subtitle: 'Replay a real fault on any reactor',
+                  onTap: () => showSimulateSheet(context),
+                ),
                 _Tile(
                   icon: LucideIcons.bellRing,
                   title: 'Send test alarm',

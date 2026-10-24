@@ -13,6 +13,9 @@ class AlarmAlerts {
   final _notifications = FlutterLocalNotificationsPlugin();
   final _player = AudioPlayer();
   void Function(String reactorId)? onTapReactor;
+
+  /// Reactor whose alarm notification launched the app (cold start), if any.
+  String? launchReactor;
   bool _ready = false;
 
   static const _channel = AndroidNotificationDetails(
@@ -29,7 +32,7 @@ class AlarmAlerts {
     if (_ready) return;
     try {
       await _notifications.initialize(
-        const InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher')),
+        const InitializationSettings(android: AndroidInitializationSettings('ic_stat_kairos')),
         onDidReceiveNotificationResponse: (r) {
           final id = r.payload;
           if (id != null && id.isNotEmpty) onTapReactor?.call(id);
@@ -38,6 +41,11 @@ class AlarmAlerts {
       await _notifications
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
           ?.requestNotificationsPermission();
+      final launch = await _notifications.getNotificationAppLaunchDetails();
+      final payload = launch?.notificationResponse?.payload;
+      if ((launch?.didNotificationLaunchApp ?? false) && payload != null && payload.isNotEmpty) {
+        launchReactor = payload;
+      }
       await _player.setReleaseMode(ReleaseMode.stop);
       _ready = true;
     } on Object {

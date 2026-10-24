@@ -156,11 +156,25 @@ class ReactorsNotifier extends Notifier<Map<String, ReactorView>> {
     switch (frame) {
       case SnapshotFrame(:final reactors):
         state = {for (final r in reactors) r.id: ReactorView.fromSummary(r)};
+        // The snapshot has no alarm history: fetch it for reactors already in
+        // alarm or watch, so time-to-act and contributors show after a cold start.
+        for (final r in reactors.where((r) => r.state != HealthState.normal)) {
+          fireAndForget(_seedAlarm(r.id));
+        }
       case EventFrame(:final event):
         final current = state[event.reactorId];
         if (current == null) return;
         state = {...state, event.reactorId: _apply(current, event)};
     }
+  }
+
+  Future<void> _seedAlarm(String id) async {
+    final events = await ref.read(apiProvider)?.events(id) ?? const <AlarmEvent>[];
+    final alarms = events.where((e) => e.state == HealthState.alarm).toList();
+    final last = alarms.isNotEmpty ? alarms.last : (events.isNotEmpty ? events.last : null);
+    final current = state[id];
+    if (last == null || current == null || current.lastAlarm != null) return;
+    state = {...state, id: current.copyWith(lastAlarm: last)};
   }
 
   ReactorView _apply(ReactorView r, KEvent e) => switch (e) {

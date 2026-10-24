@@ -7,6 +7,7 @@ import 'package:kairos_pager/core/models/plant.dart';
 import 'package:kairos_pager/core/providers.dart';
 import 'package:kairos_pager/core/theme/kairos_theme.dart';
 import 'package:kairos_pager/core/theme/tokens.dart';
+import 'package:kairos_pager/features/alerts/simulate_sheet.dart';
 import 'package:kairos_pager/widgets/format.dart';
 import 'package:kairos_pager/widgets/status_copy.dart';
 import 'package:kairos_pager/widgets/ui.dart';
@@ -34,6 +35,11 @@ class AlertsScreen extends ConsumerWidget {
               child: PageTitle(
                 'Alerts',
                 subtitle: open == 0 ? 'Nothing waiting for you' : '$open waiting for you',
+                trailing: InkWell(
+                  borderRadius: BorderRadius.circular(KR.pill),
+                  onTap: () => showSimulateSheet(context),
+                  child: const Padding(padding: EdgeInsets.all(4), child: SimulateButton()),
+                ),
               ),
             ),
             SliverToBoxAdapter(

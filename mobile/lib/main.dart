@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kairos_pager/app/app.dart';
 import 'package:kairos_pager/core/notifications/alarm_alerts.dart';
+import 'package:kairos_pager/core/notifications/alarm_service.dart';
 import 'package:kairos_pager/core/process_providers.dart';
 import 'package:kairos_pager/core/providers.dart';
 import 'package:kairos_pager/core/storage/pairing_store.dart';
@@ -13,6 +14,7 @@ Future<void> main() async {
   final themeMode = await ThemePrefStore().load();
   final processId = await ProcessPrefStore().load();
   await AlarmAlerts.instance.init();
+  AlarmService.init();
   runApp(
     ProviderScope(
       overrides: [
