@@ -39,3 +39,11 @@ from `artifacts/metrics/*.json` (`make eval`).
 ## Copilot (Claude on Bedrock)
 - The LLM never produces numbers; it phrases engine outputs. If Bedrock is down or the
   temporary credentials expire, the rule-based cards and all forecasts and alarms keep working.
+
+## Impact page
+
+Plant history (batches, failures, energy and feedstock per batch, prices) is simulated with fixed seeds per plant and labelled as such on the page and in the exports. Only the improvement rates (fault detection share, energy saving) come from the evaluation in `artifacts/metrics`. The rescued-batch share and the feed-optimisation share are stated assumptions (see `backend/app/impact.py`).
+
+## Live demo loop
+
+Reactors restart their batch after an 8 s turnaround, so the same held-out batches repeat. "Simulate alarm" swaps a reactor to a fault batch (96, 97 or 100) for one cycle.
