@@ -1,0 +1,98 @@
+# Every constant carries value, unit, provenance (published | assumed | fitted), and source.
+# Rule: unverified values are `assumed`. Never silently promote to `published`.
+
+impeller_power_number:
+  value: 5.0
+  unit: "-"
+  provenance: published
+  source: "Standard turbulent-regime Rushton turbine power number (Np ~ 5)"
+
+broth_density:
+  value: 1030.0
+  unit: kg/m3
+  provenance: assumed
+  source: "Water-like broth, midpoint of 1000-1050 kg/m3"
+
+impeller_to_tank_ratio:
+  value: 0.33
+  unit: "-"
+  provenance: assumed
+  source: "Typical stirred-tank geometry D/T ~ 1/3"
+
+tank_aspect_ratio:
+  value: 2.5
+  unit: "-"
+  provenance: assumed
+  source: "Typical industrial fermenter H/T 2-3; used to derive T from vessel volume"
+
+gassed_power_ratio:
+  value: 0.6
+  unit: "-"
+  provenance: assumed
+  source: "Pg/P typical 0.5-0.7 for aerated Rushton turbines"
+
+kla_coefficient:
+  value: 0.026
+  unit: "SI (s^-1)"
+  provenance: published
+  source: "van't Riet (1979), coalescing systems: kLa = 0.026 (Pg/V)^0.4 vs^0.5"
+
+kla_power_exponent:
+  value: 0.4
+  unit: "-"
+  provenance: published
+  source: "van't Riet (1979)"
+
+kla_vs_exponent:
+  value: 0.5
+  unit: "-"
+  provenance: published
+  source: "van't Riet (1979)"
+
+o2_saturation_25c:
+  value: 8.26
+  unit: mg/L
+  provenance: published
+  source: "Air-saturated water at 25 C, 1 atm (standard solubility tables)"
+
+critical_do_fraction:
+  value: 0.25
+  unit: "fraction of saturation"
+  provenance: assumed
+  source: "Literature range 20-30% saturation for P. chrysogenum; midpoint, flagged"
+
+compressor_specific_power:
+  value: 1.5
+  unit: kW per (m3/min) of air
+  provenance: assumed
+  source: "Assumed blower/compressor specific energy at ~1-2 bar(g); state as assumption"
+
+motor_efficiency:
+  value: 0.9
+  unit: "-"
+  provenance: assumed
+  source: "Assumed agitator drive + motor efficiency"
+
+grid_emission_factor_india:
+  value: 0.727
+  unit: kgCO2/kWh
+  provenance: assumed
+  source: "CEA CO2 Baseline Database order of magnitude; verify latest version before quoting as published"
+
+electricity_tariff_india:
+  value: 8.0
+  unit: INR/kWh
+  provenance: assumed
+  source: "Assumed industrial tariff; varies by state"
+
+recommender_min_yield_fraction:
+  value: 0.97
+  unit: "-"
+  provenance: assumed
+  source: "Design choice (spec 7.4): keep >= 97% of baseline forecast"
+
+ponr_recovery_fraction:
+  value: 0.90
+  unit: "-"
+  provenance: assumed
+  source: "Design choice (spec 7.5): PONR = last time correction recovers >= 90% of normal yield"

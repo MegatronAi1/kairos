@@ -1,0 +1,43 @@
+# Data and large artifacts
+data/
+artifacts/models/*.joblib
+artifacts/golden/*.parquet
+!artifacts/**/.gitkeep
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials
+.aws/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+*.egg-info/
+.ipynb_checkpoints/
+
+# Node / web
+node_modules/
+web/dist/
+web/test-results/
+web/playwright-report/
+
+# Flutter
+mobile/build/
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
