@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kairos_pager/core/api/kairos_api.dart';
 import 'package:kairos_pager/core/models/models.dart';
+import 'package:kairos_pager/core/models/plant.dart';
 import 'package:kairos_pager/core/storage/pairing_store.dart';
 import 'package:kairos_pager/core/ws/event_source.dart';
 
@@ -65,6 +66,7 @@ class ReactorView {
     required this.isFaultBatch,
     required this.state,
     required this.acknowledged,
+    this.plantId = '',
     this.tick,
     this.insight,
     this.lastAlarm,
@@ -73,6 +75,7 @@ class ReactorView {
 
   factory ReactorView.fromSummary(ReactorSummary s) => ReactorView(
     id: s.id,
+    plantId: s.plantId,
     batchId: s.batchId,
     strategy: s.strategy,
     isFaultBatch: s.isFaultBatch,
@@ -86,6 +89,7 @@ class ReactorView {
   static const historyLength = 120;
 
   final String id;
+  final String plantId;
   final int batchId;
   final String strategy;
   final bool isFaultBatch;
@@ -95,6 +99,9 @@ class ReactorView {
   final InsightEvent? insight;
   final AlarmEvent? lastAlarm;
   final List<TickEvent> recent;
+
+  /// Short name inside its plant ("R2" for "PUN-R2").
+  String get shortId => id.contains('-') ? id.substring(id.lastIndexOf('-') + 1) : id;
 
   String get strategyLabel => switch (strategy) {
     'recipe' => 'Recipe-driven',
@@ -114,6 +121,7 @@ class ReactorView {
     List<TickEvent>? recent,
   }) => ReactorView(
     id: id,
+    plantId: plantId,
     batchId: batchId ?? this.batchId,
     strategy: strategy,
     isFaultBatch: isFaultBatch,
@@ -202,3 +210,22 @@ final recommendationProvider =
     });
 
 int recommendationBucket() => DateTime.now().millisecondsSinceEpoch ~/ 30000;
+
+/// Plants of the signed-in company; refreshes every 20 s while watched.
+final plantsProvider = FutureProvider<List<PlantSummary>>((ref) async {
+  final api = ref.watch(apiProvider);
+  if (api == null) return const [];
+  final timer = Timer(const Duration(seconds: 20), ref.invalidateSelf);
+  ref.onDispose(timer.cancel);
+  return api.plants();
+});
+
+/// The plant a reactor belongs to, if known.
+final plantOfReactorProvider = Provider.family<PlantSummary?, String>((ref, reactorId) {
+  final plants = ref.watch(plantsProvider).value ?? const [];
+  final plantId = ref.watch(reactorProvider(reactorId))?.plantId ?? '';
+  for (final p in plants) {
+    if (p.id == plantId || p.reactorIds.contains(reactorId)) return p;
+  }
+  return null;
+});

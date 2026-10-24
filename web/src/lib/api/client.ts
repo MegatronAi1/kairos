@@ -9,15 +9,17 @@ import type {
   Trajectory,
 } from "./types";
 
+import { authToken } from "@/lib/session";
+
 const BASE = import.meta.env.VITE_API_BASE ?? "";
-const TOKEN = import.meta.env.VITE_API_TOKEN ?? "";
 
 export const apiUrl = (path: string) => `${BASE}/api/v1${path}`;
 
 export function wsUrl(): string {
   const base = BASE || window.location.origin;
   const url = new URL("/ws", base.replace(/^http/, "ws"));
-  if (TOKEN) url.searchParams.set("token", TOKEN);
+  const token = authToken();
+  if (token) url.searchParams.set("token", token);
   return url.toString();
 }
 
@@ -35,7 +37,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}),
+      ...(authToken() ? { Authorization: `Bearer ${authToken()}` } : {}),
       ...init.headers,
     },
   });
@@ -67,6 +69,15 @@ export const api = {
     ),
   recommendation: (id: string, mode: "energy" | "rescue" = "energy") =>
     request<EnergyRecommendation>(`/reactors/${id}/recommendation?mode=${mode}`),
+  tenant: () => request<{ id: string; name: string; tagline: string; fictional: boolean }>("/tenant"),
+  plants: () => request<PlantRollup[]>("/plants"),
+  plant: (id: string) => request<PlantRollup & { reactor_summaries: ReactorSummary[] }>(`/plants/${id}`),
+  demoAccounts: () => request<{ email: string; password: string; name: string; role: string }[]>("/auth/demo-accounts"),
+  login: (email: string, password: string) =>
+    request<{ token: string; user: { email: string; name: string; role: string }; tenant: { id: string; name: string } }>(
+      "/auth/login",
+      { method: "POST", body: JSON.stringify({ email, password }) },
+    ),
   agentStatus: () => request<{ enabled: boolean; model_chat: string | null }>("/agent/status"),
 };
 
@@ -82,7 +93,7 @@ export async function* chatStream(
     signal,
     headers: {
       "Content-Type": "application/json",
-      ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}),
+      ...(authToken() ? { Authorization: `Bearer ${authToken()}` } : {}),
     },
     body: JSON.stringify({ messages, reactor_id: reactorId, process_id: processId }),
   });
@@ -194,4 +205,26 @@ export interface Metrics {
     yield_check_pct_change_at_70pct: { mean: number; min: number; max: number };
     notes: string[];
   };
+}
+
+export interface PlantRollup {
+  id: string;
+  code: string;
+  name: string;
+  city: string;
+  country: string;
+  lat: number;
+  lon: number;
+  commissioned: string;
+  process_id: string;
+  process_name: string;
+  process_family: "biomass" | "precision" | null;
+  reactor_ids: string[];
+  reactors: number;
+  state: "normal" | "watch" | "alarm";
+  alarms_open: number;
+  watch: number;
+  power_kw: number;
+  energy_kwh: number;
+  forecast_vs_typical_pct: number | null;
 }

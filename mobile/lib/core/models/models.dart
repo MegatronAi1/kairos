@@ -284,12 +284,14 @@ class ReactorSummary {
     required this.state,
     required this.acknowledged,
     required this.tEndH,
+    this.plantId = '',
     this.lastTick,
     this.lastInsight,
   });
 
   factory ReactorSummary.fromJson(Json j) => ReactorSummary(
     id: j['id'] as String,
+    plantId: j['plant_id'] as String? ?? '',
     batchId: (j['batch_id'] as num).toInt(),
     strategy: j['strategy'] as String? ?? '',
     isFaultBatch: j['is_fault_batch'] as bool? ?? false,
@@ -302,6 +304,7 @@ class ReactorSummary {
   );
 
   final String id;
+  final String plantId;
   final int batchId;
   final String strategy;
   final bool isFaultBatch;

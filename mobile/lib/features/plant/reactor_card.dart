@@ -63,7 +63,7 @@ class ReactorCard extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Text(reactor.id, style: KText.display(KSize.x2xl)),
+                              Text(reactor.shortId, style: KText.display(KSize.x2xl)),
                               const SizedBox(width: KSpace.s2),
                               StatusPill(state: reactor.state, compact: true),
                             ],

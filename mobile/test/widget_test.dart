@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kairos_pager/app/app.dart';
 import 'package:kairos_pager/core/models/models.dart';
+import 'package:kairos_pager/core/models/plant.dart';
 import 'package:kairos_pager/core/process_providers.dart';
 import 'package:kairos_pager/core/providers.dart';
 import 'package:kairos_pager/core/storage/pairing_store.dart';
@@ -33,8 +35,9 @@ class FakeSource implements EventSource {
 
 Json _fixture(String name) => jsonDecode(File('test/fixtures/$name').readAsStringSync()) as Json;
 
-ReactorSummary _summary(String id, int batch) => ReactorSummary(
+ReactorSummary _summary(String id, int batch, {String plant = ''}) => ReactorSummary(
   id: id,
+  plantId: plant,
   batchId: batch,
   strategy: batch >= 91 ? 'fault' : 'recipe',
   isFaultBatch: batch >= 91,
@@ -44,14 +47,19 @@ ReactorSummary _summary(String id, int batch) => ReactorSummary(
   tEndH: 230,
 );
 
-Future<FakeSource> _pump(WidgetTester tester) async {
+Future<FakeSource> _pump(
+  WidgetTester tester, {
+  List<PlantSummary> plants = const [],
+  Pairing pairing = const Pairing(serverUrl: 'http://test:8000', token: ''),
+}) async {
   final source = FakeSource();
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        initialPairingProvider.overrideWithValue(const Pairing(serverUrl: 'http://test:8000', token: '')),
+        initialPairingProvider.overrideWithValue(pairing),
         eventSourceProvider.overrideWithValue(source),
         processesProvider.overrideWith((ref) async => const []),
+        plantsProvider.overrideWith((ref) async => plants),
       ],
       child: const KairosApp(),
     ),
@@ -63,7 +71,7 @@ Future<FakeSource> _pump(WidgetTester tester) async {
 void main() {
   testWidgets('plant shows skeletons, then reactors from the snapshot', (tester) async {
     final source = await _pump(tester);
-    expect(find.text('Plant'), findsOneWidget);
+    expect(find.text('Plants'), findsOneWidget);
     expect(find.text('R1'), findsNothing);
 
     source.emit(SnapshotFrame([_summary('R1', 22), _summary('R2', 91)]));
@@ -98,6 +106,62 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('ALARM'), findsNothing);
-    expect(find.text('Plant'), findsOneWidget);
+    expect(find.text('Plants'), findsOneWidget);
+  });
+
+  testWidgets('reactors are grouped by plant with the demo plant first', (tester) async {
+    tester.view.physicalSize = const Size(1080, 4000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const plants = [
+      PlantSummary(
+        id: 'bengaluru',
+        name: 'Bengaluru Precision Dairy',
+        city: 'Bengaluru',
+        country: 'India',
+        processId: 'whey',
+        processName: 'Whey protein',
+        processFamily: 'precision',
+        state: HealthState.normal,
+      ),
+      PlantSummary(
+        id: 'pune',
+        name: 'Pune Mycoprotein Works',
+        city: 'Pune',
+        country: 'India',
+        processId: 'mycoprotein',
+        processName: 'Mycoprotein',
+        processFamily: 'biomass',
+        state: HealthState.normal,
+      ),
+    ];
+    final source = await _pump(
+      tester,
+      plants: plants,
+      pairing: const Pairing(
+        serverUrl: 'http://test:8000',
+        token: '',
+        userName: 'Priya Shah',
+        userRole: 'Operator',
+        tenantName: 'Aurora Bioproteins',
+      ),
+    );
+    source.emit(
+      SnapshotFrame([
+        _summary('BLR-R1', 65, plant: 'bengaluru'),
+        _summary('PUN-R1', 26, plant: 'pune'),
+        _summary('PUN-R2', 99, plant: 'pune'),
+      ]),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('Aurora Bioproteins'), findsOneWidget);
+    expect(find.text('Hi Priya'), findsOneWidget);
+    expect(find.text('All 3 reactors running smoothly across 2 plants'), findsOneWidget);
+    final pune = tester.getTopLeft(find.text('Pune Mycoprotein Works'));
+    final blr = tester.getTopLeft(find.text('Bengaluru Precision Dairy'));
+    expect(pune.dy, lessThan(blr.dy));
+    expect(find.text('Pune · Mycoprotein'), findsOneWidget);
+    expect(find.text('R2'), findsOneWidget); // short id inside its plant
   });
 }

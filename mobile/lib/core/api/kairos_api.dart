@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:kairos_pager/core/models/models.dart';
+import 'package:kairos_pager/core/models/plant.dart';
 import 'package:kairos_pager/core/models/process.dart';
 import 'package:kairos_pager/core/storage/pairing_store.dart';
 
@@ -22,6 +23,42 @@ class KairosApi {
     if (pairing.demo) return true;
     final res = await _dio.get<Map<String, dynamic>>('healthz');
     return res.data?['status'] == 'ok';
+  }
+
+  /// Demo accounts the server offers on its sign-in screen.
+  Future<List<DemoAccount>> demoAccounts() async {
+    final res = await _dio.get<List<dynamic>>('auth/demo-accounts');
+    return (res.data ?? const []).map((e) => DemoAccount.fromJson(e as Json)).toList();
+  }
+
+  /// Signs in; throws [DioException] (401) when the email or password is wrong.
+  Future<LoginResult> login(String email, String password) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      'auth/login',
+      data: {'email': email, 'password': password},
+    );
+    return LoginResult.fromJson(res.data!);
+  }
+
+  /// Plants of the signed-in company with live roll-ups. Demo mode: one local plant.
+  Future<List<PlantSummary>> plants() async {
+    if (pairing.demo) {
+      return const [
+        PlantSummary(
+          id: 'pune',
+          name: 'Demo plant',
+          city: 'Offline demo',
+          country: '',
+          processId: 'mycoprotein',
+          processName: 'Mycoprotein',
+          processFamily: 'biomass',
+          state: HealthState.normal,
+          reactorIds: ['PUN-R1', 'PUN-R2', 'PUN-R3', 'PUN-R4'],
+        ),
+      ];
+    }
+    final res = await _dio.get<List<dynamic>>('plants');
+    return (res.data ?? const []).map((e) => PlantSummary.fromJson(e as Json)).toList();
   }
 
   Future<List<ReactorSummary>> reactors() async {

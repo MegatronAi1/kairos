@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kairos_pager/core/api/kairos_api.dart';
@@ -5,7 +6,9 @@ import 'package:kairos_pager/core/providers.dart';
 import 'package:kairos_pager/core/storage/pairing_store.dart';
 import 'package:kairos_pager/core/theme/kairos_theme.dart';
 import 'package:kairos_pager/core/theme/tokens.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
+/// Sign in to the company's Kairos server. Demo accounts are offered by the server.
 class PairScreen extends ConsumerStatefulWidget {
   const PairScreen({super.key});
 
@@ -14,40 +17,90 @@ class PairScreen extends ConsumerStatefulWidget {
 }
 
 class _PairScreenState extends ConsumerState<PairScreen> {
-  final _url = TextEditingController(text: 'http://');
-  final _token = TextEditingController();
+  final _url = TextEditingController(text: 'http://localhost:8000');
+  final _email = TextEditingController();
+  final _password = TextEditingController();
   bool _busy = false;
+  bool _showServer = false;
   String? _error;
 
   @override
   void dispose() {
     _url.dispose();
-    _token.dispose();
+    _email.dispose();
+    _password.dispose();
     super.dispose();
   }
 
-  Future<void> _connect() async {
+  /// Validated server address, or null (with an error shown).
+  String? _server() {
     final url = _url.text.trim();
     final uri = Uri.tryParse(url);
     if (uri == null || !uri.hasAuthority || !(uri.scheme == 'http' || uri.scheme == 'https')) {
-      setState(() => _error = 'Enter the server address, for example http://192.168.1.20:8000');
+      setState(() {
+        _showServer = true;
+        _error = 'Enter the server address, for example http://192.168.1.20:8000';
+      });
+      return null;
+    }
+    return url;
+  }
+
+  Future<void> _useDemoAccount() async {
+    final url = _server();
+    if (url == null) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final accounts = await KairosApi(Pairing(serverUrl: url, token: '')).demoAccounts();
+      if (accounts.isEmpty) throw StateError('no demo accounts');
+      final a = accounts.firstWhere((x) => x.role.toLowerCase() == 'operator', orElse: () => accounts.first);
+      _email.text = a.email;
+      _password.text = a.password;
+    } on Object {
+      if (mounted) setState(() => _error = "Couldn't reach Kairos at $url to fetch the demo account.");
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _signIn() async {
+    final url = _server();
+    if (url == null) return;
+    if (_email.text.trim().isEmpty || _password.text.isEmpty) {
+      setState(() => _error = 'Enter your email and password, or use the demo account.');
       return;
     }
     setState(() {
       _busy = true;
       _error = null;
     });
-    final pairing = Pairing(serverUrl: url, token: _token.text.trim());
     try {
-      final ok = await KairosApi(pairing).ping();
-      if (!ok) throw Exception('unexpected response');
-      await ref.read(pairingProvider.notifier).pair(pairing);
-    } on Object {
+      final r = await KairosApi(Pairing(serverUrl: url, token: '')).login(_email.text.trim(), _password.text);
+      await ref
+          .read(pairingProvider.notifier)
+          .pair(
+            Pairing(
+              serverUrl: url,
+              token: r.token,
+              userName: r.userName,
+              userRole: r.userRole,
+              userEmail: r.userEmail,
+              tenantName: r.tenantName,
+            ),
+          );
+    } on DioException catch (e) {
       if (mounted) {
         setState(
-          () => _error = 'Could not reach Kairos at that address. Check the laptop is on the same Wi-Fi.',
+          () => _error = e.response?.statusCode == 401
+              ? "That email and password don't match. Try the demo account."
+              : "Couldn't reach Kairos at $url. Check the laptop is on and on the same network.",
         );
       }
+    } on Object {
+      if (mounted) setState(() => _error = 'Something went wrong signing in. Please try again.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -58,33 +111,47 @@ class _PairScreenState extends ConsumerState<PairScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(KSpace.s6),
+          padding: const EdgeInsets.fromLTRB(KSpace.s6, KSpace.s12, KSpace.s6, KSpace.s6),
           children: [
-            const SizedBox(height: KSpace.s12),
-            Text('Kairos Pager', style: KText.ui(KSize.x3xl, weight: FontWeight.w600)),
+            Row(
+              children: [
+                Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: KColors.accentX500, width: 2.5),
+                  ),
+                ),
+                const SizedBox(width: KSpace.s2),
+                Text('Kairos', style: KText.display(KSize.xl)),
+              ],
+            ),
+            const SizedBox(height: KSpace.s8),
+            Text('Sign in', style: KText.display(KSize.x3xl)),
             const SizedBox(height: KSpace.s2),
             Text(
-              'Connect to the Kairos Control Room to receive reactor alarms on this phone.',
+              'Your plants, your reactors and their alarms, in your pocket.',
               style: KText.ui(KSize.lg, color: KColors.textSecondary),
             ),
             const SizedBox(height: KSpace.s8),
             TextField(
-              controller: _url,
-              keyboardType: TextInputType.url,
+              controller: _email,
+              keyboardType: TextInputType.emailAddress,
               autocorrect: false,
-              style: KText.mono(KSize.lg),
-              decoration: const InputDecoration(
-                labelText: 'Server address',
-                hintText: 'http://192.168.1.20:8000',
-              ),
+              textInputAction: TextInputAction.next,
+              style: KText.ui(KSize.lg),
+              decoration: const InputDecoration(labelText: 'Work email', hintText: 'name@company.com'),
             ),
             const SizedBox(height: KSpace.s4),
             TextField(
-              controller: _token,
+              controller: _password,
               obscureText: true,
               autocorrect: false,
-              style: KText.mono(KSize.lg),
-              decoration: const InputDecoration(labelText: 'Access token (if set)'),
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _busy ? null : _signIn(),
+              style: KText.ui(KSize.lg),
+              decoration: const InputDecoration(labelText: 'Password'),
             ),
             if (_error != null) ...[
               const SizedBox(height: KSpace.s3),
@@ -92,20 +159,56 @@ class _PairScreenState extends ConsumerState<PairScreen> {
             ],
             const SizedBox(height: KSpace.s6),
             FilledButton(
-              onPressed: _busy ? null : _connect,
+              onPressed: _busy ? null : _signIn,
               child: _busy
                   ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Connect'),
+                  : const Text('Sign in'),
             ),
             const SizedBox(height: KSpace.s3),
-            OutlinedButton(
-              onPressed: _busy ? null : () => ref.read(pairingProvider.notifier).pair(const Pairing.demo()),
-              child: const Text('Use demo data (no server)'),
+            OutlinedButton.icon(
+              onPressed: _busy ? null : _useDemoAccount,
+              icon: const Icon(LucideIcons.userCheck, size: 18),
+              label: const Text('Use demo account'),
             ),
-            const SizedBox(height: KSpace.s6),
+            const SizedBox(height: KSpace.s4),
+            Theme(
+              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                key: ValueKey(_showServer),
+                initiallyExpanded: _showServer,
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: const EdgeInsets.only(bottom: KSpace.s2),
+                leading: Icon(LucideIcons.server, size: 18, color: KColors.textSecondary),
+                title: Text('Server', style: KText.ui(KSize.md, color: KColors.textSecondary)),
+                subtitle: Text(_url.text, style: KText.mono(KSize.sm, color: KColors.textMuted)),
+                children: [
+                  TextField(
+                    controller: _url,
+                    keyboardType: TextInputType.url,
+                    autocorrect: false,
+                    onChanged: (_) => setState(() {}),
+                    style: KText.mono(KSize.md),
+                    decoration: const InputDecoration(
+                      labelText: 'Server address',
+                      hintText: 'http://192.168.1.20:8000',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Align(
+              child: TextButton(
+                onPressed: _busy ? null : () => ref.read(pairingProvider.notifier).pair(const Pairing.demo()),
+                child: Text(
+                  'No server? Explore with offline demo data',
+                  style: KText.ui(KSize.sm, color: KColors.textSecondary),
+                ),
+              ),
+            ),
+            const SizedBox(height: KSpace.s4),
             Text(
-              'Data shown is from the IndPenSim simulator (synthetic). No personal data is stored; '
-              'the app keeps only the server address and token.',
+              'Demo company: Aurora Bioproteins (fictional). Reactor data replays the IndPenSim simulator '
+              '(synthetic). The app stores only the server address, your session and your name.',
               style: KText.ui(KSize.sm, color: KColors.textMuted),
             ),
           ],

@@ -82,6 +82,7 @@ export type KEvent = TickEvent | AlarmEvent | InsightEvent | AckEvent;
 
 export interface ReactorSummary {
   id: string;
+  plant_id: string;
   batch_id: number;
   strategy: string;
   is_fault_batch: boolean;

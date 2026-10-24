@@ -36,6 +36,7 @@ class _AlarmTakeoverScreenState extends ConsumerState<AlarmTakeoverScreen>
   @override
   Widget build(BuildContext context) {
     final r = ref.watch(reactorProvider(widget.reactorId));
+    final plant = ref.watch(plantOfReactorProvider(widget.reactorId));
     final card = r?.insight?.card;
     final contributors = r?.lastAlarm?.contributors ?? const <Contribution>[];
     final remaining = r?.ponrRemainingH;
@@ -87,9 +88,15 @@ class _AlarmTakeoverScreenState extends ConsumerState<AlarmTakeoverScreen>
                             child: Text('ALARM', style: KText.overline(color: KColors.bgBase)),
                           ),
                           const SizedBox(width: KSpace.s3),
-                          Text(
-                            '${widget.reactorId} · batch ${r?.batchId ?? '—'}',
-                            style: KText.mono(KSize.md, color: KColors.textSecondary),
+                          Expanded(
+                            child: Text(
+                              plant == null
+                                  ? '${widget.reactorId} · batch ${r?.batchId ?? '—'}'
+                                  : '${plant.name} · ${r?.shortId ?? widget.reactorId}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: KText.mono(KSize.md, color: KColors.textSecondary),
+                            ),
                           ),
                         ],
                       ),

@@ -58,10 +58,11 @@ class _KairosAppState extends ConsumerState<KairosApp> with WidgetsBindingObserv
       fireAndForget(AlarmAlerts.instance.buzz());
     } else {
       final card = ref.read(reactorProvider(e.reactorId))?.insight?.card;
+      final plant = ref.read(plantOfReactorProvider(e.reactorId));
       fireAndForget(
         AlarmAlerts.instance.notify(
           reactorId: e.reactorId,
-          title: '${e.reactorId}: ${card?.title ?? 'Alarm'}',
+          title: '${plant == null ? e.reactorId : '${plant.name} ${e.reactorId}'}: ${card?.title ?? 'Alarm'}',
           body: card?.action ?? 'Open Kairos for the diagnosis.',
         ),
       );

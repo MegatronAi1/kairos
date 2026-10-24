@@ -71,7 +71,7 @@ function Gallery({ list, current }: { list: ProcessSummary[]; current: string })
         const Icon = FAMILY_ICON[fam];
         return (
           <div key={fam}>
-            <div className="overline mb-2 flex items-center gap-1.5">
+            <div className="eyebrow mb-2 flex items-center gap-1.5">
               <Icon size={12} /> {FAMILY_LABEL[fam]}
             </div>
             <div className="grid grid-cols-4 gap-2">
@@ -109,7 +109,7 @@ function Hero({ p }: { p: ProcessDetail }) {
         <div className="flex items-center gap-2 text-sm" style={{ color: "var(--color-accent-500)" }}>
           <Icon size={15} /> {FAMILY_LABEL[p.family]}
         </div>
-        <h1 className="mt-1 text-4xl font-semibold">{p.name}</h1>
+        <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">{p.name}</h1>
         <p className="mt-1 max-w-3xl text-lg text-text-secondary">{p.product}</p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Chip>
@@ -133,7 +133,7 @@ function Hero({ p }: { p: ProcessDetail }) {
       </div>
       <Tip content={`How well our live benchmark (IndPenSim penicillin fed-batch, an aerobic filamentous fungus) represents this process: ${p.kairos?.benchmark_fit_why}`}>
         <div tabIndex={0} className="shrink-0 rounded-card border border-border-subtle bg-bg-surface px-4 py-3 text-center">
-          <div className="overline">Benchmark fit</div>
+          <div className="eyebrow">Benchmark fit</div>
           <div className="display mt-1 text-lg font-semibold" style={{ color: FIT_COLOR[fit] }}>
             {FIT_LABEL[fit]}
           </div>
@@ -212,7 +212,7 @@ function HelpCard({ icon, kpi, title, children }: { icon: ReactNode; kpi: string
         <span className="flex h-8 w-8 items-center justify-center rounded-control" style={{ background: "var(--color-accent-glow)", color: "var(--color-accent-500)" }}>
           {icon}
         </span>
-        <span className="overline">{kpi}</span>
+        <span className="eyebrow">{kpi}</span>
       </div>
       <h3 className="display mt-2 text-lg font-semibold">{title}</h3>
       <div className="mt-2 space-y-2 text-sm text-text-secondary">{children}</div>

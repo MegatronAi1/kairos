@@ -6,7 +6,10 @@ data the models never saw. Each plant is configured for one alternative-protein
 process from the Process Library (backend/app/processes/catalog.yaml).
 
 Only the demo plant (Pune) carries a fault batch, so the story on the map is
-clear: one plant needs attention. Other plants start part-way through their
+clear: one plant needs attention. The three held-out normal batches on which the
+detector raises its (reported) false alarms (27, 45, 68) are not placed in other
+plants, so the map does not mix the demo fault with known false alarms; plants
+therefore run 2-4 reactors, as real sites differ in size. Other plants start part-way through their
 batches so the fleet looks like a running operation, not a synchronised replay.
 """
 
@@ -68,7 +71,7 @@ DEMO_TENANT = Tenant(
             lat=12.97,
             lon=77.59,
             process_id="whey",
-            slots={"R1": 65, "R2": 70, "R3": 73, "R4": 27},
+            slots={"R1": 65, "R2": 70, "R3": 73, "R4": 28},
             start_h=60.0,
             commissioned="2026",
         ),
@@ -81,7 +84,7 @@ DEMO_TENANT = Tenant(
             lat=51.92,
             lon=4.48,
             process_id="bioalbumen",
-            slots={"R1": 38, "R2": 44, "R3": 57, "R4": 4},
+            slots={"R1": 38, "R2": 44, "R3": 57},
             start_h=120.0,
             commissioned="2024",
         ),
@@ -94,7 +97,7 @@ DEMO_TENANT = Tenant(
             lat=1.35,
             lon=103.82,
             process_id="lactoferrin",
-            slots={"R1": 68, "R2": 9, "R3": 28, "R4": 45},
+            slots={"R1": 4, "R2": 9},
             start_h=30.0,
             commissioned="2026",
         ),

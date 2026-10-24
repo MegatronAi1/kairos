@@ -36,6 +36,7 @@ void main() {
   test('ack and reactor summary parse', () {
     expect((KEvent.fromJson(_fixture('ack.json'))! as AckEvent).by, 'pager');
     final s = ReactorSummary.fromJson(_fixture('reactor_summary.json'));
+    expect(s.plantId, 'pune');
     expect(s.isFaultBatch, isTrue);
     expect(s.state, HealthState.alarm);
     expect(s.lastTick, isNull);

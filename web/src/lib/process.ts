@@ -3,6 +3,7 @@ import { create } from "zustand";
 
 import { apiUrl } from "@/lib/api/client";
 import type { Provenance } from "@/lib/api/types";
+import { authToken } from "@/lib/session";
 
 export type Family = "biomass" | "precision";
 export type ReactorKind = "airlift" | "stirred_tank" | "photobioreactor" | "gas_fermenter";
@@ -79,7 +80,7 @@ export const useProcessStore = create<ProcessState>((set) => ({
 }));
 
 async function get<T>(path: string): Promise<T> {
-  const token = import.meta.env.VITE_API_TOKEN ?? "";
+  const token = authToken();
   const res = await fetch(apiUrl(path), { headers: token ? { Authorization: `Bearer ${token}` } : {} });
   if (!res.ok) throw new Error(`${res.status}`);
   return (await res.json()) as T;

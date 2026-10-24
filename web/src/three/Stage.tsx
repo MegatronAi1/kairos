@@ -1,10 +1,10 @@
-import { ContactShadows, Environment, Html, Lightformer, OrbitControls } from "@react-three/drei";
+import { ContactShadows, Environment, Lightformer, OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Suspense, useMemo, type ReactNode } from "react";
 
 import { StatusPill } from "@/components/primitives";
 import type { HealthState, TickEvent } from "@/lib/api/types";
-import { fmt, fmtInt, stateVar, valueOf } from "@/lib/format";
+import { fmt, stateVar, valueOf } from "@/lib/format";
 import type { ReactorLive } from "@/lib/store/live";
 import { cssToken, useTheme } from "@/lib/theme";
 
@@ -76,8 +76,8 @@ export function FleetScene({ reactors, onSelect }: { reactors: ReactorLive[]; on
   const offset = ((reactors.length - 1) * gap) / 2;
   return (
     <Stage
-      camera={[0, 5.5, 13]}
-      orbit={{ autoRotate: true, target: [0, 1.6, 0], minDistance: 8, maxDistance: 20 }}
+      camera={[0, 3.4, 10.2]}
+      orbit={{ autoRotate: false, target: [0, 1.9, 0], minDistance: 8, maxDistance: 20 }}
       fallback={<FleetFallback reactors={reactors} onSelect={onSelect} />}
     >
       {reactors.map((r, i) => (
@@ -87,27 +87,9 @@ export function FleetScene({ reactors, onSelect }: { reactors: ReactorLive[]; on
           state={r.state}
           position={[i * gap - offset, 0, 0]}
           onSelect={() => onSelect(r.id)}
-          label={<FloatingLabel r={r} />}
         />
       ))}
     </Stage>
-  );
-}
-
-function FloatingLabel({ r }: { r: ReactorLive }) {
-  const f = r.tick?.forecast;
-  return (
-    <Html position={[0, 4.75, 0]} center distanceFactor={11} zIndexRange={[10, 0]}>
-      <div className="pointer-events-none flex w-64 flex-col items-center gap-1 whitespace-nowrap text-center">
-        <div className="flex items-center gap-2">
-          <span className="num text-xl font-semibold">{r.id}</span>
-          <StatusPill state={r.state} compact />
-        </div>
-        <span className="num text-sm text-text-secondary">
-          {f ? `${fmtInt(f.p50)} ${f.unit} · ${Math.round(f.vs_golden_pct)}% of typical` : "forecast pending"}
-        </span>
-      </div>
-    </Html>
   );
 }
 

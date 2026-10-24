@@ -37,7 +37,7 @@ export function ProcessSelector() {
             const FamIcon = ICON[fam];
             return (
               <Menu.Group key={fam}>
-                <Menu.Label className="overline flex items-center gap-1.5 px-2 pb-1 pt-2">
+                <Menu.Label className="eyebrow flex items-center gap-1.5 px-2 pb-1 pt-2">
                   <FamIcon size={12} /> {FAMILY_LABEL[fam]}
                 </Menu.Label>
                 {list
@@ -47,7 +47,7 @@ export function ProcessSelector() {
                       key={p.id}
                       onSelect={() => {
                         select(p.id);
-                        navigate("/process");
+                        navigate("/app/process");
                       }}
                       className="flex cursor-pointer items-center gap-2 rounded-control px-2 py-1.5 outline-none data-[highlighted]:bg-bg-inset"
                     >

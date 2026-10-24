@@ -22,11 +22,42 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(KSpace.s4),
         children: [
+          Text('ACCOUNT', style: KText.overline()),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: CircleAvatar(
+              backgroundColor: KColors.accentGlow,
+              foregroundColor: KColors.accentX500,
+              child: Text(
+                (pairing?.firstName.isNotEmpty ?? false) ? pairing!.firstName[0] : '?',
+                style: KText.display(KSize.lg, color: KColors.accentX500),
+              ),
+            ),
+            title: Text(
+              (pairing?.userName.isNotEmpty ?? false) ? pairing!.userName : 'Not signed in',
+              style: KText.ui(KSize.md, weight: FontWeight.w500),
+            ),
+            subtitle: Text(
+              [
+                if (pairing?.userRole.isNotEmpty ?? false) pairing!.userRole,
+                if (pairing?.tenantName.isNotEmpty ?? false) pairing!.tenantName,
+              ].join(' · '),
+              style: KText.ui(KSize.sm, color: KColors.textSecondary),
+            ),
+          ),
+          const SizedBox(height: KSpace.s4),
           Text('SERVER', style: KText.overline()),
           ListTile(
             contentPadding: EdgeInsets.zero,
-            title: Text(pairing?.label ?? 'Not paired', style: KText.mono(KSize.md)),
-            subtitle: Text(status.name, style: KText.ui(KSize.sm, color: KColors.textSecondary)),
+            title: Text(pairing?.label ?? 'Not connected', style: KText.mono(KSize.md)),
+            subtitle: Text(
+              switch (status) {
+                ConnectionStatus.live => 'Live',
+                ConnectionStatus.connecting => 'Connecting',
+                ConnectionStatus.offline => 'Offline, retrying',
+              },
+              style: KText.ui(KSize.sm, color: KColors.textSecondary),
+            ),
           ),
           const SizedBox(height: KSpace.s2),
           OutlinedButton(
@@ -44,7 +75,7 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: KSpace.s3),
           OutlinedButton(
             onPressed: () => ref.read(pairingProvider.notifier).unpair(),
-            child: const Text('Disconnect and pair again'),
+            child: const Text('Sign out'),
           ),
           const SizedBox(height: KSpace.s8),
           Text('PROCESS', style: KText.overline()),

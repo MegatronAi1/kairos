@@ -234,7 +234,7 @@ export function EnergyPanel({ reactorId, tick, mode }: { reactorId: string; tick
       ) : (
         <div className="rounded-control p-3" style={{ background: "var(--color-accent-glow)" }}>
           <div className="flex items-center justify-between">
-            <span className="overline" style={{ color: "var(--color-accent-500)" }}>
+            <span className="eyebrow" style={{ color: "var(--color-accent-500)" }}>
               {mode === "rescue" ? "Rescue setting" : "Save energy"}
             </span>
             <ProvenanceChip provenance="assumed" source={rec.assumptions.join(" · ")} />

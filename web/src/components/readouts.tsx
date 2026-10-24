@@ -89,13 +89,13 @@ export function InsightCardView({ insight, state }: { insight: InsightEvent; sta
     >
       <div className="p-4">
         <div className="flex items-center justify-between">
-          <span className="overline">{insight.source === "agent" ? "Kairos copilot" : "Kairos rules"}</span>
+          <span className="eyebrow">{insight.source === "agent" ? "Kairos copilot" : "Kairos rules"}</span>
           <ConfidenceMeter confidence={c.confidence} />
         </div>
         <h3 className="mt-2 text-lg font-medium">{c.title}</h3>
         <p className="mt-1 text-text-secondary">{c.summary}</p>
         <div className="mt-3 rounded-control p-3" style={{ background: "var(--color-accent-glow)" }}>
-          <div className="overline" style={{ color: "var(--color-accent-500)" }}>
+          <div className="eyebrow" style={{ color: "var(--color-accent-500)" }}>
             Do this
           </div>
           <p className="mt-0.5 font-medium">{c.action}</p>

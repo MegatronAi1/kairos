@@ -13,6 +13,7 @@ export type ConnectionStatus = "connecting" | "live" | "offline";
 
 export interface ReactorLive {
   id: string;
+  plantId: string;
   batchId: number;
   strategy: string;
   isFault: boolean;
@@ -40,6 +41,7 @@ interface LiveState {
 
 const fromSummary = (s: ReactorSummary): ReactorLive => ({
   id: s.id,
+  plantId: s.plant_id,
   batchId: s.batch_id,
   strategy: s.strategy,
   isFault: s.is_fault_batch,

@@ -15,7 +15,7 @@ function Stat({ label, value, sub, tip }: { label: string; value: ReactNode; sub
   return (
     <Panel className="p-4">
       <Tip content={tip}>
-        <div tabIndex={0} className="overline cursor-help">
+        <div tabIndex={0} className="eyebrow cursor-help">
           {label}
         </div>
       </Tip>
@@ -457,7 +457,7 @@ function EnergySection({ e }: { e: NonNullable<Metrics["energy"]> }) {
             +{fmt(e.yield_check_pct_change_at_70pct.max, 1)}%.
           </p>
           <div>
-            <div className="overline mb-1">Does the safety margin matter?</div>
+            <div className="eyebrow mb-1">Does the safety margin matter?</div>
             <table className="num w-full text-sm">
               <caption className="sr-only">Energy saving by safety margin</caption>
               <tbody>

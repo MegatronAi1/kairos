@@ -107,7 +107,7 @@ class WsEventSource implements EventSource {
   }
 }
 
-/// Offline demo stream: R2 drifts into an oxygen-limitation alarm at ~71 h.
+/// Offline demo stream: PUN-R2 drifts into an oxygen-limitation alarm at ~71 h.
 /// Used for UI work and as a venue fallback. Clearly labelled "Demo data".
 class MockEventSource implements EventSource {
   MockEventSource({this.hoursPerSecond = 2});
@@ -120,8 +120,8 @@ class MockEventSource implements EventSource {
   Timer? _timer;
   double _t = 40;
 
-  static const _slots = {'R1': 22, 'R2': 91, 'R3': 46, 'R4': 74};
-  static const _strategy = {'R1': 'recipe', 'R2': 'fault', 'R3': 'operator', 'R4': 'pat'};
+  static const _slots = {'PUN-R1': 22, 'PUN-R2': 91, 'PUN-R3': 46, 'PUN-R4': 74};
+  static const _strategy = {'PUN-R1': 'recipe', 'PUN-R2': 'fault', 'PUN-R3': 'operator', 'PUN-R4': 'pat'};
 
   @override
   Stream<Frame> get frames => _frames.stream;
@@ -145,6 +145,7 @@ class MockEventSource implements EventSource {
               state: HealthState.normal,
               acknowledged: false,
               tEndH: 230,
+              plantId: 'pune',
             ),
         ]),
       );
@@ -161,11 +162,11 @@ class MockEventSource implements EventSource {
     for (final e in _slots.entries) {
       final id = e.key;
       // Bounded drift: DO settles near 12% sat, forecast near 900 kg (physical ranges).
-      final drift = id == 'R2' ? math.min(22, math.max(0, _t - 60)) : 0.0;
+      final drift = id == 'PUN-R2' ? math.min(22, math.max(0, _t - 60)) : 0.0;
       final doPct = 62 - drift * 2.2 + _noise(1.5);
       final score = (96 - drift * 4.5 + _noise(2)).clamp(5, 100).toDouble();
       final state = score < 45 ? HealthState.alarm : (score < 70 ? HealthState.watch : HealthState.normal);
-      final p50 = 3300.0 - drift * 108 + (id == 'R3' ? -500 : 0);
+      final p50 = 3300.0 - drift * 108 + (id == 'PUN-R3' ? -500 : 0);
       final progress = (_t / 230).clamp(0, 1).toDouble();
       final contributors = drift > 0
           ? const [
@@ -194,7 +195,7 @@ class MockEventSource implements EventSource {
             },
             derived: {
               'our': 0.99 + _noise(0.05),
-              'power_kw': id == 'R4' ? 121 : 141 + _noise(2),
+              'power_kw': id == 'PUN-R4' ? 121 : 141 + _noise(2),
               'kwh_cum': _t * 140,
             },
             forecast: Forecast(

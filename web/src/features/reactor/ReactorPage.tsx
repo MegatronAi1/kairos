@@ -17,7 +17,7 @@ import { ReactorScene } from "@/three/Stage";
 const VITALS = ["feed", "aeration", "rpm", "our", "power_kw", "kwh_cum"];
 
 export default function ReactorPage() {
-  const { id = "" } = useParams();
+  const { id = "", plantId = "" } = useParams();
   const r = useLive((s) => s.reactors[id]);
   const status = useLive((s) => s.status);
   const patch = useLive((s) => s.patch);
@@ -34,6 +34,7 @@ export default function ReactorPage() {
   const f = tick?.forecast;
   const h = tick?.health;
   const story = statusSentence(r);
+  const short = r.id;
   const lastAlarm = [...r.alarms].reverse().find((a) => a.state === "alarm");
   const ponr = lastAlarm?.ponr_hours ?? null;
   const ponrLeft = ponr !== null && tick && lastAlarm ? Math.max(0, ponr - (tick.t_h - lastAlarm.t_h)) : null;
@@ -46,29 +47,30 @@ export default function ReactorPage() {
     [...contributors, ...lastCard].some((c) => ["do_pct", "o2_offgas_pct", "co2_offgas_pct", "our", "cer"].includes(c));
 
   return (
-    <div className="grid h-full grid-cols-[320px_minmax(0,1fr)_380px] grid-rows-[auto_minmax(0,1fr)_auto] gap-4 p-4">
+    <div className="h-full overflow-y-auto xl:overflow-hidden">
+    <div className="grid gap-4 p-4 xl:h-full xl:grid-cols-[300px_minmax(0,1fr)_360px] xl:grid-rows-[auto_minmax(0,1fr)_auto]">
       {/* Header: who, and how it is doing, in a sentence */}
-      <Panel className="col-span-3 flex items-center gap-5 px-5 py-3">
-        <Link to="/" aria-label="Back to fleet" className="rounded-control p-1.5 text-text-secondary hover:bg-bg-elevated hover:text-text-primary">
+      <Panel className="flex flex-wrap items-center gap-4 px-4 py-3 md:px-5 xl:col-span-3">
+        <Link to={`/app/plants/${plantId || r.plantId}`} aria-label="Back to plant" className="rounded-control p-1.5 text-text-secondary hover:bg-bg-elevated hover:text-text-primary">
           <ArrowLeft size={18} />
         </Link>
         <HealthRing score={h?.score ?? null} state={h?.state ?? r.state} size={56} />
         <div className="min-w-0">
           <div className="flex items-center gap-3">
-            <h1 className="display-num text-3xl font-semibold">{r.id}</h1>
+            <h1 className="display-num text-2xl font-semibold md:text-3xl">{r.id}</h1>
             <StatusPill state={r.state} />
             <span className="text-sm text-text-muted">
               Batch {r.batchId} · {strategyLabel(r.strategy)}
             </span>
           </div>
-          <p className="truncate text-lg">
+          <p className="text-base md:truncate md:text-lg">
             <span className="font-medium" style={{ color: r.state === "normal" ? undefined : stateVar[r.state] }}>
               {story.headline}.
             </span>{" "}
             <span className="text-text-secondary">{story.detail}</span>
           </p>
         </div>
-        <div className="ml-auto flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3 xl:ml-auto">
           {r.acknowledged && r.state !== "normal" && (
             <span className="flex items-center gap-1.5 text-sm text-text-secondary">
               <CheckCircle2 size={15} /> Acknowledged by operator
@@ -90,7 +92,7 @@ export default function ReactorPage() {
       </Panel>
 
       {/* Left rail: gauges, forecast fan, settings */}
-      <Panel className="overflow-y-auto px-4 py-4">
+      <Panel className="order-3 px-4 py-4 xl:order-none xl:overflow-y-auto">
         <h2 className="text-base font-medium">Process at a glance</h2>
         <div className="mt-2 grid grid-cols-2 gap-x-2 gap-y-3">
           <Gauge label="Dissolved oxygen" unit="% sat" value={valueOf(tick ?? null, "do_pct")} min={0} max={120} band={[45, 110]} warnBelow={25} history={hist("do_pct")} />
@@ -142,8 +144,8 @@ export default function ReactorPage() {
       </Panel>
 
       {/* Centre: the twin above the oxygen/energy trade-off */}
-      <div className="grid min-h-0 grid-rows-[minmax(0,1fr)_auto] gap-4">
-        <div className="relative min-h-0 overflow-hidden rounded-card border border-border-subtle">
+      <div className="order-2 grid min-h-0 gap-4 xl:order-none xl:grid-rows-[minmax(0,1fr)_auto]">
+        <div className="relative h-[380px] min-h-0 overflow-hidden rounded-card border border-border-subtle md:h-[460px] xl:h-auto">
           <ErrorBoundary title="3D view unavailable">
             <ReactorScene tick={tick ?? null} state={r.state} />
           </ErrorBoundary>
@@ -168,7 +170,7 @@ export default function ReactorPage() {
       </div>
 
       {/* Right rail: copilot */}
-      <Panel className="flex min-h-0 flex-col gap-4 overflow-hidden p-4">
+      <Panel className="order-4 flex min-h-[560px] flex-col gap-4 overflow-hidden p-4 xl:order-none xl:min-h-0">
         <h2 className="text-base font-medium">Copilot</h2>
         <div className="max-h-[55%] shrink-0 space-y-4 overflow-y-auto">
           {ponrLeft !== null && ponr !== null && <PonrCountdown remainingH={ponrLeft} totalH={ponr} size={150} />}
@@ -185,8 +187,8 @@ export default function ReactorPage() {
             <Chat
               reactorId={r.id}
               suggestions={[
-                `Why is ${r.id} drifting and what should I do?`,
-                `How much energy can ${r.id} save without risking oxygen?`,
+                `Why is ${short} drifting and what should I do?`,
+                `How much energy can ${short} save without risking oxygen?`,
                 "How accurate are your models on held-out batches?",
               ]}
             />
@@ -195,9 +197,10 @@ export default function ReactorPage() {
       </Panel>
 
       {/* Bottom: flight recorder */}
-      <Panel className="col-span-3 px-4 py-3">
+      <Panel className="order-5 px-4 py-3 xl:order-none xl:col-span-3">
         <TimelineScrubber r={r} />
       </Panel>
+    </div>
     </div>
   );
 }
