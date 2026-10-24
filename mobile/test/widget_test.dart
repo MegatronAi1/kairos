@@ -197,7 +197,7 @@ void main() {
     expect(find.text('Reduce sugar feed 10% for 3 h'), findsOneWidget);
     expect(find.text('Expected: +6 to +11% final yield (model estimate)'), findsOneWidget);
 
-    await tester.tap(find.text('Acknowledge'));
+    await tester.tap(find.text('Acknowledge alarm'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('ALARM'), findsNothing);
