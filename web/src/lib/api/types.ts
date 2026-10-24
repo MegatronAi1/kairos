@@ -129,3 +129,29 @@ export type ChatEvent =
   | { type: "evidence"; items: string[] }
   | { type: "done" }
   | { type: "error"; message: string };
+
+export interface SetpointOption {
+  rpm: number;
+  aeration: number;
+  power_kw: number;
+  do_pct: number;
+  feasible: boolean;
+}
+
+export interface EnergyRecommendation {
+  reactor_id: string;
+  mode: "energy" | "rescue";
+  t_h: number;
+  action: string;
+  current: SetpointOption;
+  recommended: SetpointOption;
+  power_saving_kw: number;
+  energy_delta_pct: number;
+  kwh_saved_rest_of_batch: number;
+  co2_saved_kg: number;
+  inr_saved: number;
+  target_do_pct: number;
+  options: SetpointOption[];
+  assumptions: string[];
+  provenance: Provenance;
+}

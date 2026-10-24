@@ -19,7 +19,7 @@ function Stat({ label, value, sub, tip }: { label: string; value: ReactNode; sub
           {label}
         </div>
       </Tip>
-      <div className="num mt-1 text-3xl font-semibold">{value}</div>
+      <div className="display-num mt-1 text-4xl font-semibold">{value}</div>
       <div className="mt-1 text-sm text-text-secondary">{sub}</div>
     </Panel>
   );
@@ -78,28 +78,32 @@ export default function EvidencePage() {
 
         <div className="grid grid-cols-4 gap-4">
           <Stat
-            label="Yield error at 30% of batch"
+            label="KPI 1 · Yield prediction accuracy"
             value={`${fmtInt(c30.models.kairos!.mae)} kg`}
-            sub={`${Math.round(better30)}% lower than the naive baseline (${fmtInt(c30.models.naive_mean!.mae)} kg)`}
-            tip={`Mean absolute error of the final-yield forecast on ${y.n_test_batches} held-out normal batches at 30% progress. Typical batch: ${fmtInt(y.typical_yield_kg)} kg.`}
+            sub={`error at 30% of the batch, ${Math.round(better30)}% lower than the naive baseline`}
+            tip={`Mean absolute error of the final-yield forecast on ${y.n_test_batches} held-out normal batches at 30% progress. Typical batch: ${fmtInt(y.typical_yield_kg)} kg. 90% intervals cover ${Math.round(100 * y.overall_hourly_coverage.coverage_90)}% of outcomes.`}
           />
           <Stat
-            label="90% interval coverage"
-            value={`${Math.round(100 * y.overall_hourly_coverage.coverage_90)}%`}
-            sub="target 90% (±5%), hourly checkpoints"
-            tip="Share of hourly checkpoints on held-out batches where the true final yield fell inside the 90% conformal interval."
-          />
-          <Stat
-            label="Faults detected"
+            label="KPI 2 · Fault detection"
             value={`${k.detected} / ${k.n_fault_batches}`}
-            sub={`median ${fmt(k.median_delay_h)} h after onset`}
-            tip="Fault batches 91-100. Onsets are exact for input faults and estimated for the others (see table)."
+            sub={`fault batches caught, median ${fmt(k.median_delay_h)} h after the fault began`}
+            tip="Fault batches 91-100. Onsets are exact for input faults and estimated for the others (see the table)."
           />
           <Stat
-            label="False alarms per normal batch"
+            label="KPI 3 · False alarms"
             value={fmt(k.false_alarms_per_batch, 1)}
-            sub={`classic MSPC: ${fmt(b.false_alarms_per_batch, 1)} per batch`}
+            sub={`per normal batch, versus ${fmt(b.false_alarms_per_batch, 1)} for classic MSPC`}
             tip={`Alarm entries on ${f.per_normal_batch.length} held-out normal batches. Kairos adds golden-trajectory normalisation, EWMA, ${fmt(f.detector.persistence_h)} h persistence and hysteresis.`}
+          />
+          <Stat
+            label="KPI 4 · Oxygen transfer vs energy"
+            value={m.energy ? `${fmt(m.energy.mean_saving_pct, 0)}%` : "—"}
+            sub={
+              m.energy
+                ? `less agitation + aeration energy, dissolved oxygen kept above ${fmt(m.energy.target_do_pct, 0)}%`
+                : "run make eval"
+            }
+            tip="Held-out normal batches, hourly step-limited recommendations. Physics model with assumed geometry and compressor efficiency."
           />
         </div>
 
@@ -205,6 +209,8 @@ export default function EvidencePage() {
             <TradeoffChart m={m} />
           </Section>
         </div>
+
+        {m.energy && <EnergySection e={m.energy} />}
 
         {m.drivers && (
           <div className="grid grid-cols-2 gap-5">
@@ -355,5 +361,120 @@ function TradeoffChart({ m }: { m: Metrics }) {
         )}
       </svg>
     </figure>
+  );
+}
+
+function EnergySection({ e }: { e: NonNullable<Metrics["energy"]> }) {
+  const pts = e.pareto.points;
+  const W = 620;
+  const H = 280;
+  const P = { l: 52, r: 20, t: 14, b: 40 };
+  const xMax = Math.max(e.pareto.actual_kwh, ...pts.map((p) => p.kwh)) * 1.05;
+  const xMin = Math.min(...pts.map((p) => p.kwh)) * 0.95;
+  const yMax = Math.max(100, ...pts.map((p) => p.do_p5_pct));
+  const yMin = Math.min(0, ...pts.map((p) => p.do_p5_pct));
+  const xs = (v: number) => P.l + ((v - xMin) / (xMax - xMin)) * (W - P.l - P.r);
+  const ys = (v: number) => H - P.b - ((v - yMin) / (yMax - yMin)) * (H - P.t - P.b);
+  const tiles: [string, string][] = [
+    [fmtInt(e.kwh_saved_per_batch), "kWh saved per batch"],
+    [`${fmt(e.co2_saved_kg_per_batch / 1000, 1)} t`, "CO₂ avoided per batch"],
+    [`₹${fmtInt(e.inr_saved_per_batch)}`, "saved per batch"],
+  ];
+  return (
+    <Section
+      title="Oxygen transfer versus energy"
+      sub={`Each dot is one agitation × aeration setting held for a whole batch (batch ${e.pareto.batch}): the energy it uses against the oxygen floor it leaves (5th percentile of dissolved oxygen). Up and left is better.`}
+    >
+      <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6">
+        <figure className="m-0">
+          <div className="mb-2 flex gap-4 text-xs text-text-secondary" aria-hidden>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: S1 }} /> Keeps oxygen safe
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: S3 }} /> Falls below the safety target
+            </span>
+          </div>
+          <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Energy per batch versus oxygen floor for each setting">
+            <rect
+              x={P.l}
+              y={ys(e.target_do_pct)}
+              width={W - P.l - P.r}
+              height={H - P.b - ys(e.target_do_pct)}
+              fill="color-mix(in srgb, var(--color-state-alarm) 8%, transparent)"
+            />
+            <line x1={P.l} x2={W - P.r} y1={ys(e.target_do_pct)} y2={ys(e.target_do_pct)} stroke="var(--color-state-alarm)" strokeDasharray="4 4" />
+            <text x={W - P.r} y={ys(e.target_do_pct) - 6} textAnchor="end" fontSize="11" fill="var(--color-text-secondary)">
+              safety target {fmt(e.target_do_pct, 0)}% sat
+            </text>
+            <line x1={xs(e.pareto.actual_kwh)} x2={xs(e.pareto.actual_kwh)} y1={P.t} y2={H - P.b} stroke="var(--color-chart-reference)" strokeDasharray="5 4" />
+            <text x={xs(e.pareto.actual_kwh) - 6} y={P.t + 10} textAnchor="end" fontSize="11" fill="var(--color-text-secondary)">
+              as actually run: {fmtInt(e.pareto.actual_kwh)} kWh
+            </text>
+            {pts.map((p) => (
+              <circle
+                key={`${p.rpm}-${p.aeration}`}
+                cx={xs(p.kwh)}
+                cy={ys(p.do_p5_pct)}
+                r={5}
+                fill={p.do_p5_pct >= e.target_do_pct ? S1 : S3}
+                stroke="var(--color-bg-surface)"
+                strokeWidth={2}
+              >
+                <title>{`${p.rpm} rpm, ${p.aeration} m³/min: ${fmtInt(p.kwh)} kWh, oxygen floor ${fmt(p.do_p5_pct, 0)}% sat`}</title>
+              </circle>
+            ))}
+            {[xMin, (xMin + xMax) / 2, xMax].map((v) => (
+              <text key={v} x={xs(v)} y={H - P.b + 16} textAnchor="middle" fontSize="11" fill="var(--color-text-muted)" className="num">
+                {fmtInt(v)}
+              </text>
+            ))}
+            {[0, 50, 100].map((v) => (
+              <text key={v} x={P.l - 8} y={ys(v) + 4} textAnchor="end" fontSize="11" fill="var(--color-text-muted)" className="num">
+                {v}%
+              </text>
+            ))}
+            <text x={(W + P.l) / 2} y={H - 4} textAnchor="middle" fontSize="11" fill="var(--color-text-secondary)">
+              Energy per batch (kWh)
+            </text>
+            <text x={12} y={(H - P.b) / 2} fontSize="11" fill="var(--color-text-secondary)" textAnchor="middle" transform={`rotate(-90 12 ${(H - P.b) / 2})`}>
+              Oxygen floor (% sat)
+            </text>
+          </svg>
+        </figure>
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-2 text-center">
+            {tiles.map(([v, l]) => (
+              <div key={l} className="rounded-control bg-bg-inset px-2 py-3">
+                <div className="display-num text-xl font-semibold">{v}</div>
+                <div className="text-xs text-text-muted">{l}</div>
+              </div>
+            ))}
+          </div>
+          <p className="text-sm text-text-secondary">
+            Kairos picks the cheapest agitation and aeration that keep dissolved oxygen above {fmt(e.target_do_pct, 0)}% sat, one
+            cautious step at a time. The yield model sees no harm: forecasts move {fmt(e.yield_check_pct_change_at_70pct.min, 1)}% to
+            +{fmt(e.yield_check_pct_change_at_70pct.max, 1)}%.
+          </p>
+          <div>
+            <div className="overline mb-1">Does the safety margin matter?</div>
+            <table className="num w-full text-sm">
+              <caption className="sr-only">Energy saving by safety margin</caption>
+              <tbody>
+                {e.sensitivity.map((s) => (
+                  <tr key={s.margin_pct} className="border-t border-border-subtle">
+                    <td className="py-1 text-text-secondary">DO kept ≥ {fmt(s.target_do_pct, 0)}% sat</td>
+                    <td className="text-right">{fmt(s.mean_saving_pct, 1)}% saved</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="flex items-center gap-2 text-xs text-text-muted">
+            <ProvenanceChip provenance="assumed" source={e.provenance} /> CO₂ and ₹ use an assumed India grid factor and tariff.
+          </p>
+        </div>
+      </div>
+    </Section>
   );
 }

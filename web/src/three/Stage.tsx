@@ -114,8 +114,8 @@ function FloatingLabel({ r }: { r: ReactorLive }) {
 export function ReactorScene({ tick, state }: { tick: TickEvent | null; state: HealthState }) {
   return (
     <Stage
-      camera={[4.6, 3.8, 8.6]}
-      orbit={{ target: [0, 1.9, 0], minDistance: 5, maxDistance: 13 }}
+      camera={[3.4, 3.0, 6.6]}
+      orbit={{ target: [0, 2.0, 0], minDistance: 4.5, maxDistance: 12 }}
       fallback={<VesselSvg tick={tick} state={state} />}
     >
       <Reactor tick={tick} state={state} />

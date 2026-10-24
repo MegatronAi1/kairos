@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 
 import { ErrorState, Skeleton, StatusPill } from "@/components/primitives";
+import { HealthRing } from "@/components/viz";
+import { statusSentence } from "@/lib/narrate";
 import { fmt, fmtInt, stateVar, strategyLabel, valueOf } from "@/lib/format";
 import { sortedReactors, useLive } from "@/lib/store/live";
 import { FleetScene } from "@/three/Stage";
@@ -36,35 +38,40 @@ export function FleetPage() {
             <button
               key={r.id}
               onClick={() => navigate(`/reactor/${r.id}`)}
-              className="pointer-events-auto w-60 rounded-card border p-3 text-left backdrop-blur hover:border-border-strong"
+              className="pointer-events-auto w-64 rounded-card border p-3 text-left backdrop-blur hover:border-border-strong"
               style={{
                 background: "color-mix(in srgb, var(--color-bg-surface) 88%, transparent)",
                 borderColor: r.state === "normal" ? "var(--color-border-subtle)" : stateVar[r.state],
               }}
               aria-label={`Open reactor ${r.id}`}
             >
-              <div className="flex items-center justify-between">
-                <span className="num text-lg font-semibold">{r.id}</span>
-                <StatusPill state={r.state} compact />
+              <div className="flex items-center gap-3">
+                <HealthRing score={r.tick?.health?.score ?? null} state={r.tick?.health?.state ?? r.state} size={48} />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="display-num text-xl font-semibold">{r.id}</span>
+                    <StatusPill state={r.state} compact />
+                  </div>
+                  <div className="truncate text-xs text-text-muted">
+                    Batch {r.batchId} · {strategyLabel(r.strategy)}
+                  </div>
+                </div>
               </div>
-              <div className="text-xs text-text-muted">
-                Batch {r.batchId} · {strategyLabel(r.strategy)}
-              </div>
-              <div className="mt-2 flex justify-between text-sm">
-                <span className="text-text-secondary">Forecast</span>
-                <span className="num">{f ? `${fmtInt(f.p50)} ${f.unit}` : "—"}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-text-secondary">Health · DO</span>
-                <span className="num">
-                  {fmt(r.tick?.health?.score, 0)} · {fmt(valueOf(r.tick, "do_pct"), 0)}%
+              <p
+                className="mt-2 line-clamp-1 text-sm font-medium"
+                style={{ color: r.state === "normal" ? undefined : stateVar[r.state] }}
+              >
+                {statusSentence(r).headline}
+              </p>
+              <p className="line-clamp-2 text-xs text-text-secondary">{statusSentence(r).detail}</p>
+              <div className="mt-2 flex justify-between border-t border-border-subtle pt-2 text-xs text-text-secondary">
+                <span>
+                  Forecast <span className="num text-text-primary">{f ? `${fmtInt(f.p50)} ${f.unit}` : "—"}</span>
+                </span>
+                <span>
+                  DO <span className="num text-text-primary">{fmt(valueOf(r.tick, "do_pct"), 0)}%</span>
                 </span>
               </div>
-              {r.state !== "normal" && r.insight && (
-                <p className="mt-2 line-clamp-2 text-sm font-medium" style={{ color: "var(--color-state-alarm)" }}>
-                  {r.insight.card.action}
-                </p>
-              )}
             </button>
           );
         })}

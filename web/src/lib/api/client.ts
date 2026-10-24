@@ -1,6 +1,7 @@
 import type {
   AckEvent,
   AlarmEvent,
+  EnergyRecommendation,
   ChatEvent,
   ControlAction,
   ProvenanceResponse,
@@ -60,6 +61,12 @@ export const api = {
   },
   provenance: () => request<ProvenanceResponse>("/provenance"),
   metrics: () => request<Metrics>("/metrics"),
+  forecastHistory: (id: string) =>
+    request<{ t_h: number[]; p10: number[]; p50: number[]; p90: number[]; typical: number; unit: string }>(
+      `/reactors/${id}/forecast-history`,
+    ),
+  recommendation: (id: string, mode: "energy" | "rescue" = "energy") =>
+    request<EnergyRecommendation>(`/reactors/${id}/recommendation?mode=${mode}`),
   agentStatus: () => request<{ enabled: boolean; model_chat: string | null }>("/agent/status"),
 };
 
@@ -167,5 +174,23 @@ export interface Metrics {
     drivers: { feature: string; label: string; importance: number; share: number }[];
     interactions: { a_label: string; b_label: string; strength_kg: number; sentence: string }[];
   };
-  energy?: Record<string, unknown>;
+  energy?: {
+    provenance: string;
+    method: string;
+    target_do_pct: number;
+    mean_saving_pct: number;
+    kwh_saved_per_batch: number;
+    co2_saved_kg_per_batch: number;
+    inr_saved_per_batch: number;
+    per_batch: { batch: number; kwh_now: number; kwh_kairos: number; saving_pct: number }[];
+    sensitivity: { margin_pct: number; target_do_pct: number; mean_saving_pct: number }[];
+    pareto: {
+      batch: number;
+      actual_kwh: number;
+      target_do_pct: number;
+      points: { rpm: number; aeration: number; kwh: number; do_p5_pct: number; hours_below_target_pct: number }[];
+    };
+    yield_check_pct_change_at_70pct: { mean: number; min: number; max: number };
+    notes: string[];
+  };
 }

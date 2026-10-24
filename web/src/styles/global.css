@@ -12,6 +12,13 @@
 }
 
 @font-face {
+  font-family: "Space Grotesk";
+  src: url("/fonts/SpaceGrotesk.ttf") format("truetype");
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+@font-face {
   font-family: "JetBrains Mono";
   src: url("/fonts/JetBrainsMono.ttf") format("truetype");
   font-weight: 100 800;
@@ -39,6 +46,20 @@ body {
   font-family: var(--font-family-ui);
   font-size: var(--font-size-md);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Display face for headings and hero numbers. */
+.display,
+h1,
+h2 {
+  font-family: "Space Grotesk", var(--font-family-ui);
+  letter-spacing: -0.01em;
+}
+
+.display-num {
+  font-family: "Space Grotesk", var(--font-family-ui);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 /* Numbers are first-class: tabular monospace everywhere they appear. */

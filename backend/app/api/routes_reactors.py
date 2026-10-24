@@ -66,3 +66,29 @@ def recommendation(
     if not isinstance(engines, MlEngines):
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Models not loaded")
     return recommend(engines, r.id, r.batch.batch_id, r.batch.index_at(r.t_h), mode)
+
+
+@router.get("/{reactor_id}/forecast-history")
+def forecast_history(
+    reactor_id: str, every: int = 5, state: AppState = Depends(get_state)
+) -> dict[str, object]:
+    """Forecast p10/p50/p90 from batch start up to the replay cursor (downsampled)."""
+    from app.pipeline.ml_engines import MlEngines
+
+    r = state.reactor(reactor_id)
+    engines = state.engine.pipeline.engines
+    if not isinstance(engines, MlEngines):
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Models not loaded")
+    s = engines.scores[r.batch.batch_id]
+    t = r.batch.time_h
+    end = r.batch.index_at(r.t_h) + 1
+    idx = [i for i in range(0, end, max(1, every)) if t[i] / 230.0 >= 0.08]
+    typical = engines.models.yield_model.golden_yield_kg
+    return {
+        "t_h": [round(float(t[i]), 2) for i in idx],
+        "p10": [round(float(s.p10[i])) for i in idx],
+        "p50": [round(float(s.p50[i])) for i in idx],
+        "p90": [round(float(s.p90[i])) for i in idx],
+        "typical": round(typical),
+        "unit": engines.models.yield_model.unit,
+    }
