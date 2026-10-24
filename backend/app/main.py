@@ -19,6 +19,7 @@ from app.api import (
     routes_batches,
     routes_meta,
     routes_metrics,
+    routes_plants,
     routes_processes,
     routes_reactors,
     ws,
@@ -28,7 +29,7 @@ from app.core.logging import configure_logging, log
 from app.pipeline.events import EventBus
 from app.pipeline.inference import Engines, InferencePipeline, NullEngines
 from app.replay.engine import ReplayEngine
-from app.replay.scenarios import get_scenario
+from app.replay.scenarios import get_tenant
 from app.replay.store import BatchStore
 from app.schemas import AlarmEvent, InsightCard, InsightEvent
 from app.state import AppState
@@ -65,9 +66,10 @@ def build_state(settings: Settings, engines: Engines | None = None) -> AppState:
     engine = ReplayEngine(
         store, InferencePipeline(engines or load_engines()), bus, settings.tick_hz
     )
-    engine.load_scenario(get_scenario(settings.scenario), settings.default_speed_h_per_s)
+    tenant = get_tenant(settings.scenario)
+    engine.load_tenant(tenant, settings.default_speed_h_per_s)
 
-    state = AppState(settings=settings, store=store, bus=bus, engine=engine)
+    state = AppState(settings=settings, store=store, bus=bus, engine=engine, tenant=tenant)
     state.agent = build_agent(settings, state)
     pending: set[asyncio.Task[None]] = set()
 
@@ -136,8 +138,10 @@ def create_app(settings: Settings | None = None, *, autostart: bool = True) -> F
         routes_agent,
         routes_metrics,
         routes_processes,
+        routes_plants,
     ):
         app.include_router(module.router, prefix=API_PREFIX)
+    app.include_router(routes_plants.auth_router, prefix=API_PREFIX)
     app.include_router(ws.router)
     return app
 

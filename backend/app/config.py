@@ -25,9 +25,27 @@ class Settings(BaseSettings):
     model_fast: str = ""
     bedrock_max_rps: float = 0.8
 
+    # Demo sign-in accounts: "email:password:Role:Full name" separated by commas.
+    demo_users: str = (
+        "operator@aurora.demo:kairos-demo:Operator:Priya Shah,"
+        "manager@aurora.demo:kairos-demo:Plant manager:Arjun Mehta"
+    )
+
     tick_hz: float = 2.0
     default_speed_h_per_s: float = 1.0
     local_shap_every_n_ticks: int = 10
+
+    @property
+    def demo_user_list(self) -> list[dict[str, str]]:
+        out = []
+        for item in self.demo_users.split(","):
+            parts = item.strip().split(":")
+            if len(parts) == 4:
+                email, password, role, name = parts
+                out.append(
+                    {"email": email.lower(), "password": password, "role": role, "name": name}
+                )
+        return out
 
     @property
     def cors_origin_list(self) -> list[str]:

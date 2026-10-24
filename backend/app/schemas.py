@@ -90,6 +90,7 @@ class AckEvent(EventBase):
 
 class ReactorSummary(BaseModel):
     id: str
+    plant_id: str = ""
     batch_id: int
     strategy: str
     is_fault_batch: bool

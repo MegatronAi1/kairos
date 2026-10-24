@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from app.core.logging import log
 from app.pipeline.events import EventBus
 from app.pipeline.inference import InferencePipeline, progress_of
+from app.replay.scenarios import Tenant
 from app.replay.store import Batch, BatchStore
 from app.schemas import (
     AckEvent,
@@ -31,6 +32,8 @@ class Reactor:
     id: str
     batch: Batch
     speed_h_per_s: float
+    plant_id: str = ""
+    start_h: float = 0.0
     running: bool = True
     t_h: float = 0.0
     state: HealthState = "normal"
@@ -44,6 +47,7 @@ class Reactor:
     def summary(self) -> ReactorSummary:
         return ReactorSummary(
             id=self.id,
+            plant_id=self.plant_id,
             batch_id=self.batch.batch_id,
             strategy=self.batch.strategy,
             is_fault_batch=self.batch.is_fault_batch,
@@ -89,6 +93,15 @@ class ReplayEngine:
         self.reactors = {
             rid: Reactor(rid, self.store.get(bid), speed_h_per_s) for rid, bid in slots.items()
         }
+
+    def load_tenant(self, tenant: Tenant, speed_h_per_s: float) -> None:
+        self.reactors = {}
+        for plant in tenant.plants:
+            for short, bid in plant.slots.items():
+                rid = plant.reactor_id(short)
+                batch = self.store.get(bid)
+                t0 = min(plant.start_h, batch.t_end_h * 0.9)
+                self.reactors[rid] = Reactor(rid, batch, speed_h_per_s, plant.id, t0, t_h=t0)
 
     def start(self) -> None:
         if self._task is None:

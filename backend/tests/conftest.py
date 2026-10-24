@@ -74,6 +74,7 @@ def client(state: AppState) -> Iterator[TestClient]:
         routes_batches,
         routes_meta,
         routes_metrics,
+        routes_plants,
         routes_processes,
         routes_reactors,
         ws,
@@ -81,8 +82,16 @@ def client(state: AppState) -> Iterator[TestClient]:
     from app.main import API_PREFIX
 
     app = FastAPI()
-    for module in (routes_meta, routes_reactors, routes_batches, routes_metrics, routes_processes):
+    for module in (
+        routes_meta,
+        routes_reactors,
+        routes_batches,
+        routes_metrics,
+        routes_processes,
+        routes_plants,
+    ):
         app.include_router(module.router, prefix=API_PREFIX)
+    app.include_router(routes_plants.auth_router, prefix=API_PREFIX)
     app.include_router(ws.router)
     app.state.kairos = state
     from app.config import get_settings

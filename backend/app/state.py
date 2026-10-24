@@ -10,6 +10,7 @@ from fastapi import HTTPException, Request, status
 from app.config import Settings
 from app.pipeline.events import EventBus
 from app.replay.engine import Reactor, ReplayEngine
+from app.replay.scenarios import DEMO_TENANT, Tenant
 from app.replay.store import BatchStore
 
 if TYPE_CHECKING:
@@ -23,6 +24,7 @@ class AppState:
     bus: EventBus
     engine: ReplayEngine
     agent: AgentService | None = None
+    tenant: Tenant = DEMO_TENANT
 
     def reactor(self, reactor_id: str) -> Reactor:
         r = self.engine.reactors.get(reactor_id)
