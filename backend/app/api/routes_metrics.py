@@ -10,10 +10,10 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 
-from app.core.security import require_token
 from app.state import AppState, get_state
 
-router = APIRouter(tags=["metrics"], dependencies=[Depends(require_token)])
+# Public on purpose: the evaluation results are the product's evidence (landing page).
+router = APIRouter(tags=["metrics"])
 
 METRIC_FILES = ("yield", "faults", "drivers", "energy")
 
