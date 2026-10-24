@@ -1,4 +1,4 @@
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import Markdown from "react-markdown";
 
@@ -95,30 +95,46 @@ export function Chat({ reactorId, suggestions }: { reactorId?: string; suggestio
         )}
         {messages.map((m, i) =>
           m.role === "user" ? (
-            <div key={i} className="ml-8 rounded-card bg-bg-elevated px-3 py-2 text-sm">
-              {m.content}
+            <div key={i} className="flex justify-end">
+              <div
+                className="max-w-[85%] rounded-2xl rounded-br-md px-3.5 py-2 text-sm font-medium shadow-sm"
+                style={{ background: "var(--color-accent-500)", color: "var(--color-bg-base)" }}
+              >
+                {m.content}
+              </div>
             </div>
-          ) : (
-            <div key={i} className={`text-sm leading-relaxed ${m.error ? "text-text-secondary" : ""}`}>
-              {m.content ? (
-                <div className="prose-kairos">
-                  <Markdown>{m.content}</Markdown>
-                </div>
-              ) : null}
-              {m.evidence && m.evidence.length > 0 && (
-                <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  <span className="text-xs text-text-muted">Based on</span>
-                  {m.evidence.map((e) => (
-                    <EvidenceChip key={e} source={e} />
-                  ))}
-                </div>
-              )}
+          ) : !m.content && !m.evidence?.length ? null : (
+            <div key={i} className="flex items-start gap-2">
+              <span
+                className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+                style={{ background: "var(--color-accent-glow)", color: "var(--color-accent-500)" }}
+                aria-hidden
+              >
+                <Sparkles size={12} />
+              </span>
+              <div
+                className={`min-w-0 max-w-[92%] rounded-2xl rounded-tl-md border border-border-subtle bg-bg-surface px-3.5 py-2.5 text-sm leading-relaxed shadow-sm ${m.error ? "text-text-secondary" : ""}`}
+              >
+                {m.content ? (
+                  <div className="prose-kairos">
+                    <Markdown>{m.content}</Markdown>
+                  </div>
+                ) : null}
+                {m.evidence && m.evidence.length > 0 && (
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-border-subtle pt-2">
+                    <span className="text-xs text-text-muted">Based on</span>
+                    {m.evidence.map((e) => (
+                      <EvidenceChip key={e} source={e} />
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           ),
         )}
         {activity && (
-          <div className="flex items-center gap-2 text-sm text-text-muted">
-            <Loader2 size={14} className="animate-spin" aria-hidden /> Kairos is {activity}…
+          <div className="ml-8 flex w-fit items-center gap-2 rounded-2xl rounded-tl-md border border-border-subtle bg-bg-surface px-3 py-1.5 text-xs text-text-muted">
+            <Loader2 size={13} className="animate-spin" aria-hidden /> Kairos is {activity}…
           </div>
         )}
       </div>
