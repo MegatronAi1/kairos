@@ -4,7 +4,7 @@ UV ?= uv
 .PHONY: setup data train eval dev up test lint tokens
 
 setup:
-	$(UV) sync
+	$(UV) sync --all-packages
 	cd web && pnpm install
 	cd mobile && flutter pub get
 
