@@ -304,7 +304,16 @@ class ToolBox:
         }
 
     def recommend_settings(self, reactor_id: str, mode: str = "energy") -> Json:
-        return {"available": False, "reason": "Energy recommender not connected yet in this build."}
+        ml = self._ml
+        if not ml:
+            return {"available": False, "reason": "models not loaded"}
+        from app.pipeline.ml_engines import recommend
+
+        r = self._reactor(reactor_id)
+        rec = recommend(ml, r.id, r.batch.batch_id, r.batch.index_at(r.t_h), mode)
+        out = rec.model_dump(exclude={"options"})
+        out["evaluated_saving_on_held_out_batches"] = self._metrics("energy").get("mean_saving_pct")
+        return out
 
     def simulate_what_if(
         self, reactor_id: str, at_h: float | None = None, changes: Json | None = None

@@ -13,10 +13,12 @@ import numpy.typing as npt
 
 from app.core.logging import log
 from app.replay.store import Batch
-from app.schemas import Contribution, Forecast, Health
+from app.schemas import Contribution, EnergyRecommendation, Forecast, Health, SetpointOption
 from kairos_ml.bundle import BatchScores, KairosModels
+from kairos_ml.constants import load_constants
 from kairos_ml.data.load import load_process_frame
 from kairos_ml.dataset import BatchData, build_batches
+from kairos_ml.engines.energy import EnergyEngine, Option
 
 # Monitored model variable -> client sensor key (docs/API.md).
 VAR_TO_KEY: dict[str, str] = {
@@ -39,6 +41,7 @@ class MlEngines:
         self.models = models
         self.batches = batches
         self.scores: dict[int, BatchScores] = {b: models.score(d) for b, d in batches.items()}
+        self.energy = EnergyEngine()
         self.since: dict[int, npt.NDArray[np.float64]] = {
             b: _state_since(s, d) for b, (d, s) in self._pairs()
         }
@@ -111,3 +114,65 @@ def _state_since(s: BatchScores, d: BatchData) -> npt.NDArray[np.float64]:
             start = t[i]
         out[i] = start
     return out
+
+
+def _opt(o: Option) -> SetpointOption:
+    return SetpointOption(
+        rpm=o.rpm,
+        aeration=o.aeration,
+        power_kw=round(o.power_kw, 1),
+        do_pct=round(o.do_pct, 1),
+        feasible=o.feasible,
+    )
+
+
+def _action(cur: Option, best: Option, mode: str) -> str:
+    parts = []
+    if abs(best.aeration - cur.aeration) >= 1:
+        verb = "Lower" if best.aeration < cur.aeration else "Raise"
+        parts.append(f"{verb} aeration {cur.aeration:.0f} to {best.aeration:.0f} m³/min")
+    if abs(best.rpm - cur.rpm) >= 1:
+        verb = "lower" if best.rpm < cur.rpm else "raise"
+        parts.append(f"{verb} agitation {cur.rpm:.0f} to {best.rpm:.0f} rpm")
+    if not parts:
+        return (
+            "Keep current agitation and aeration"
+            if mode == "energy"
+            else "Hold settings; oxygen is at its best"
+        )
+    text = ", ".join(parts)
+    return text[0].upper() + text[1:]
+
+
+def recommend(
+    engines: MlEngines, reactor_id: str, batch_id: int, idx: int, mode: str
+) -> EnergyRecommendation:
+    raw = engines.batches[batch_id].raw
+    row = raw.iloc[idx]
+    rec = engines.energy.recommend(row, "rescue" if mode == "rescue" else "energy")
+    consts = load_constants()
+    saving_kw = rec.current.power_kw - rec.best.power_kw
+    remaining_h = max(0.0, float(raw["time_h"].iloc[-1]) - float(row["time_h"]))
+    kwh = saving_kw * remaining_h
+    return EnergyRecommendation(
+        reactor_id=reactor_id,
+        mode="rescue" if mode == "rescue" else "energy",
+        t_h=round(float(row["time_h"]), 2),
+        action=_action(rec.current, rec.best, mode),
+        current=_opt(rec.current),
+        recommended=_opt(rec.best),
+        power_saving_kw=round(saving_kw, 1),
+        energy_delta_pct=round(-100.0 * saving_kw / max(rec.current.power_kw, 1e-9), 1),
+        kwh_saved_rest_of_batch=round(kwh, 0),
+        co2_saved_kg=round(kwh * consts["grid_emission_factor_india"].value, 0),
+        inr_saved=round(kwh * consts["electricity_tariff_india"].value, 0),
+        target_do_pct=engines.energy.target_do,
+        options=[_opt(o) for o in rec.options],
+        assumptions=[
+            "kLa from van't Riet (1979) with assumed vessel geometry (published correlation, assumed geometry)",
+            "Compressor specific energy 1.5 kW per m³/min (assumed)",
+            "Quasi-steady oxygen balance anchored on measured DO (model estimate)",
+            f"Critical DO {100 * consts['critical_do_fraction'].value:.0f}% sat plus {engines.energy.margin:.0f}% margin (assumed)",
+            "Grid factor and tariff for CO2 and INR are assumed until verified",
+        ],
+    )

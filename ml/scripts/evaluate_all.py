@@ -8,7 +8,13 @@ from __future__ import annotations
 from kairos_ml.bundle import KairosModels
 from kairos_ml.data.load import load_process_frame
 from kairos_ml.dataset import build_batches
-from kairos_ml.eval.evaluate import driver_metrics, fault_metrics, write, yield_metrics
+from kairos_ml.eval.evaluate import (
+    driver_metrics,
+    energy_metrics,
+    fault_metrics,
+    write,
+    yield_metrics,
+)
 
 
 def main() -> None:
@@ -18,6 +24,7 @@ def main() -> None:
         ("yield", yield_metrics),
         ("faults", fault_metrics),
         ("drivers", driver_metrics),
+        ("energy", energy_metrics),
     ):
         print("wrote", write(name, fn(models, batches)))
 

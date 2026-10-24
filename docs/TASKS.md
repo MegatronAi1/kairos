@@ -7,7 +7,7 @@ Legend: [ ] todo, [~] in progress, [x] done
 - [x] M2 Early yield predictor + conformal intervals (p = 0.2/0.3/0.5/0.7)
 - [x] M3 Fault detector: MSPC + improved detector + persistence
 - [~] M4 Explainability: SHAP drivers, interactions, alarm contributions
-- [~] M5 Energy model (power, kLa, OTR) + setpoint recommender
+- [x] M5 Energy model (power, kLa, OTR) + setpoint recommender
 - [~] M6 Replay streamer + FastAPI + WebSocket
 - [x] M7 Claude agent on Bedrock (tool use, streaming, template fallback)
 - [~] M8 Web Control Room: 3D twin, vitals, copilot, timeline
@@ -22,7 +22,7 @@ Legend: [ ] todo, [~] in progress, [x] done
 - [ ] S3 Fleet view (4 reactors)
 - [ ] S4 Pager chat
 - [ ] S5 AWS hosted deploy
-- [ ] S6 Energy Pareto in UI
+- [~] S6 Energy Pareto in UI
 
 ## Could
 - [ ] C1 Hybrid ODE twin

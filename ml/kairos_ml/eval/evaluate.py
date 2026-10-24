@@ -283,3 +283,126 @@ def write(name: str, payload: dict[str, Any], out_dir: Path = METRICS_DIR) -> Pa
     path = out_dir / f"{name}.json"
     path.write_text(json.dumps(payload, indent=2, default=float) + "\n", encoding="utf-8")
     return path
+
+
+def energy_metrics(m: KairosModels, batches: dict[int, BatchData]) -> dict[str, Any]:
+    """Oxygen-transfer vs energy trade-off on held-out normal batches."""
+    from kairos_ml.constants import load_constants
+    from kairos_ml.engines.energy import AERATION_GRID, RPM_GRID, EnergyEngine, kla_h, power_kw
+
+    consts = load_constants()
+    grid_factor = consts["grid_emission_factor_india"]
+    tariff = consts["electricity_tariff_india"]
+    test = m.splits["test_normal"]
+
+    def run(margin: float) -> dict[str, Any]:
+        eng = EnergyEngine(margin_pct=margin)
+        per = []
+        for i in test:
+            p = eng.batch_policy(batches[i].raw)
+            cur, best = (
+                float(p["current_kw"].sum()),
+                float(p["best_kw"].sum()),
+            )  # 1 h decisions -> kWh
+            below_cur = float(np.mean(p["current_do"] < eng.target_do))
+            below_best = float(np.mean(p["best_do"] < eng.target_do))
+            per.append(
+                {
+                    "batch": i,
+                    "kwh_now": cur,
+                    "kwh_kairos": best,
+                    "saving_pct": 100 * (1 - best / cur),
+                    "hours_below_target_now_pct": 100 * below_cur,
+                    "hours_below_target_kairos_pct": 100 * below_best,
+                }
+            )
+        saved = float(np.mean([r["kwh_now"] - r["kwh_kairos"] for r in per]))
+        return {
+            "margin_pct": margin,
+            "target_do_pct": eng.target_do,
+            "mean_saving_pct": float(np.mean([r["saving_pct"] for r in per])),
+            "kwh_saved_per_batch": saved,
+            "co2_saved_kg_per_batch": saved * grid_factor.value,
+            "inr_saved_per_batch": saved * tariff.value,
+            "per_batch": per,
+        }
+
+    main = run(10.0)
+    sensitivity = [
+        {k: v for k, v in run(mg).items() if k != "per_batch"} for mg in (5.0, 15.0, 20.0, 30.0)
+    ]
+
+    # Pareto: hold one setting for a whole representative batch; energy vs oxygen safety.
+    rep = batches[test[0]].raw
+    rep = rep[rep["time_h"] >= 10.0]
+    k_now = kla_h(rep["rpm"], rep["aeration_lph"], rep["volume_l"])
+    deficit = np.clip(100.0 - rep["do_pct_sat"].to_numpy(), 0, None)
+    dt = float(np.median(np.diff(rep["time_h"].to_numpy())))
+    target = EnergyEngine().target_do
+    pareto = []
+    for rpm in RPM_GRID:
+        for aer in AERATION_GRID:
+            k_new = kla_h(np.full(len(rep), rpm), np.full(len(rep), aer), rep["volume_l"])
+            do = 100.0 - deficit * k_now / k_new
+            pareto.append(
+                {
+                    "rpm": float(rpm),
+                    "aeration": float(aer),
+                    "kwh": float(power_kw([rpm], [aer])[0]) * dt * len(rep),
+                    "do_p5_pct": float(np.percentile(do, 5)),
+                    "hours_below_target_pct": float(100 * np.mean(do < target)),
+                }
+            )
+    actual_kwh = float((rep["power_kw"] * dt).sum())
+
+    # Yield check: does the lower-DO trajectory change the yield forecast?
+    eng = EnergyEngine()
+    deltas = []
+    for i in test:
+        b = batches[i]
+        p = eng.batch_policy(b.raw, every=1)
+        do_new = np.interp(b.raw["time_h"], p["time_h"], p["best_do"])
+        c_star = b.raw["c_star_mg_l"].to_numpy()
+        feats = b.features.copy()
+        new_mgl = pd.Series(do_new * c_star / 100.0).rolling(30, min_periods=1).mean().to_numpy()
+        feats["do_mgl_mean6h"] = np.where(b.raw["time_h"] >= 10.0, new_mgl, feats["do_mgl_mean6h"])
+        k = int(np.argmin(np.abs(feats["progress"].to_numpy() - 0.7)))
+        base = m.yield_model.predict_p50(b.features.iloc[[k]])[0]
+        new = m.yield_model.predict_p50(feats.iloc[[k]])[0]
+        deltas.append(100 * (new - base) / base)
+
+    return {
+        "provenance": "synthetic data; power, kLa and the oxygen balance use published correlations with assumed geometry and efficiencies",
+        "method": "Live oxygen demand inferred from measured DO and van't Riet kLa (quasi-steady balance); cheapest setting keeping DO >= critical + margin, step-limited (aeration >= 70% of current, agitation +-10%), decided hourly.",
+        "constants": {
+            k: {"value": c.value, "unit": c.unit, "provenance": c.provenance}
+            for k, c in consts.items()
+            if k
+            in (
+                "critical_do_fraction",
+                "compressor_specific_power",
+                "impeller_power_number",
+                "gassed_power_ratio",
+                "grid_emission_factor_india",
+                "electricity_tariff_india",
+            )
+        },
+        **main,
+        "sensitivity": sensitivity,
+        "pareto": {
+            "batch": test[0],
+            "actual_kwh": actual_kwh,
+            "target_do_pct": target,
+            "points": pareto,
+        },
+        "yield_check_pct_change_at_70pct": {
+            "mean": float(np.mean(deltas)),
+            "min": float(np.min(deltas)),
+            "max": float(np.max(deltas)),
+        },
+        "notes": [
+            "Agitation is constant in IndPenSim, so agitation effects are physics-only (assumed).",
+            "Quasi-steady oxygen balance; kLa in viscous broths can be lower than van't Riet predicts.",
+            "Savings are model estimates; a pilot would confirm them with step tests.",
+        ],
+    }

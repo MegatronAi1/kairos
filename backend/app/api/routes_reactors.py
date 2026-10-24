@@ -1,9 +1,16 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.security import require_token
-from app.schemas import AckEvent, AckRequest, AlarmEvent, ControlRequest, ReactorSummary
+from app.schemas import (
+    AckEvent,
+    AckRequest,
+    AlarmEvent,
+    ControlRequest,
+    EnergyRecommendation,
+    ReactorSummary,
+)
 from app.state import AppState, get_state
 
 router = APIRouter(prefix="/reactors", tags=["reactors"], dependencies=[Depends(require_token)])
@@ -45,3 +52,17 @@ def acknowledge(
 ) -> AckEvent:
     state.reactor(reactor_id)
     return state.engine.acknowledge(reactor_id, (body or AckRequest()).by)
+
+
+@router.get("/{reactor_id}/recommendation", response_model=EnergyRecommendation)
+def recommendation(
+    reactor_id: str, mode: str = "energy", state: AppState = Depends(get_state)
+) -> EnergyRecommendation:
+    """Energy (or rescue) setpoints for the reactor's current moment, with the full sweep."""
+    from app.pipeline.ml_engines import MlEngines, recommend
+
+    r = state.reactor(reactor_id)
+    engines = state.engine.pipeline.engines
+    if not isinstance(engines, MlEngines):
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Models not loaded")
+    return recommend(engines, r.id, r.batch.batch_id, r.batch.index_at(r.t_h), mode)

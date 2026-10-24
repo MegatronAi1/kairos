@@ -84,6 +84,9 @@ class AgentService:
             "alarm": {"reactor": alarm.reactor_id, "state": alarm.state, "batch_time_h": alarm.t_h},
             "diagnosis": self.tools.call("diagnose_alarm", {"reactor_id": alarm.reactor_id}),
             "forecast": self.tools.call("predict_final_yield", {"reactor_id": alarm.reactor_id}),
+            "rescue_setpoints": self.tools.call(
+                "recommend_settings", {"reactor_id": alarm.reactor_id, "mode": "rescue"}
+            ),
             "rule_based_card": template_card(alarm).model_dump(),
         }
         prompt = (
@@ -111,7 +114,7 @@ class AgentService:
                         for k in ("title", "summary", "action", "expected_effect", "confidence")
                     },
                     ponr_hours=alarm.ponr_hours,
-                    evidence=["fault_detector", "yield_model"],
+                    evidence=["fault_detector", "yield_model", "energy_model"],
                 )
                 self._card_cache[key] = card
                 return card

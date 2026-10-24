@@ -131,3 +131,34 @@ class SensorSpec(BaseModel):
     unit: str
     provenance: Provenance
     note: str = ""
+
+
+class SetpointOption(BaseModel):
+    rpm: float
+    aeration: float
+    power_kw: float
+    do_pct: float
+    feasible: bool
+
+
+class EnergyRecommendation(BaseModel):
+    reactor_id: str
+    mode: Literal["energy", "rescue"]
+    t_h: float
+    action: str
+    current: SetpointOption
+    recommended: SetpointOption
+    power_saving_kw: float
+    energy_delta_pct: float
+    kwh_saved_rest_of_batch: float
+    co2_saved_kg: float
+    inr_saved: float
+    target_do_pct: float
+    options: list[SetpointOption]
+    assumptions: list[str]
+    provenance: Provenance = "assumed"
+
+
+class RecommendRequest(BaseModel):
+    reactor_id: str
+    mode: Literal["energy", "rescue"] = "energy"

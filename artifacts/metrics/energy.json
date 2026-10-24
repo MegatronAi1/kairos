@@ -1,0 +1,565 @@
+{
+  "provenance": "synthetic data; power, kLa and the oxygen balance use published correlations with assumed geometry and efficiencies",
+  "method": "Live oxygen demand inferred from measured DO and van't Riet kLa (quasi-steady balance); cheapest setting keeping DO >= critical + margin, step-limited (aeration >= 70% of current, agitation +-10%), decided hourly.",
+  "constants": {
+    "impeller_power_number": {
+      "value": 5.0,
+      "unit": "-",
+      "provenance": "published"
+    },
+    "gassed_power_ratio": {
+      "value": 0.6,
+      "unit": "-",
+      "provenance": "assumed"
+    },
+    "critical_do_fraction": {
+      "value": 0.25,
+      "unit": "fraction of saturation",
+      "provenance": "assumed"
+    },
+    "compressor_specific_power": {
+      "value": 1.5,
+      "unit": "kW per (m3/min) of air",
+      "provenance": "assumed"
+    },
+    "grid_emission_factor_india": {
+      "value": 0.727,
+      "unit": "kgCO2/kWh",
+      "provenance": "assumed"
+    },
+    "electricity_tariff_india": {
+      "value": 8.0,
+      "unit": "INR/kWh",
+      "provenance": "assumed"
+    }
+  },
+  "margin_pct": 10.0,
+  "target_do_pct": 35.0,
+  "mean_saving_pct": 25.865208385624207,
+  "kwh_saved_per_batch": 8228.819184472906,
+  "co2_saved_kg_per_batch": 5982.351547111803,
+  "inr_saved_per_batch": 65830.55347578325,
+  "per_batch": [
+    {
+      "batch": 4,
+      "kwh_now": 31656.455222061042,
+      "kwh_kairos": 23331.235856882493,
+      "saving_pct": 26.29864685347586,
+      "hours_below_target_now_pct": 0.0,
+      "hours_below_target_kairos_pct": 0.0
+    },
+    {
+      "batch": 9,
+      "kwh_now": 34744.10074426714,
+      "kwh_kairos": 25664.35944257075,
+      "saving_pct": 26.13318838938311,
+      "hours_below_target_now_pct": 0.0,
+      "hours_below_target_kairos_pct": 0.0
+    },
+    {
+      "batch": 26,
+      "kwh_now": 31656.455222061042,
+      "kwh_kairos": 23331.235856882493,
+      "saving_pct": 26.29864685347586,
+      "hours_below_target_now_pct": 0.0,
+      "hours_below_target_kairos_pct": 0.0
+    },
+    {
+      "batch": 27,
+      "kwh_now": 28976.897725610317,
+      "kwh_kairos": 21345.10739362982,
+      "saving_pct": 26.337499632458517,
+      "hours_below_target_now_pct": 0.4975124378109453,
+      "hours_below_target_kairos_pct": 0.4975124378109453
+    },
+    {
+      "batch": 28,
+      "kwh_now": 31656.455222061042,
+      "kwh_kairos": 23331.235856882493,
+      "saving_pct": 26.29864685347586,
+      "hours_below_target_now_pct": 0.0,
+      "hours_below_target_kairos_pct": 0.0
+    },
+    {
+      "batch": 38,
+      "kwh_now": 31656.455222061042,
+      "kwh_kairos": 23331.235856882493,
+      "saving_pct": 26.29864685347586,
+      "hours_below_target_now_pct": 0.0,
+      "hours_below_target_kairos_pct": 0.0
+    },
+    {
+      "batch": 44,
+      "kwh_now": 31656.455222061042,
+      "kwh_kairos": 25269.185342365654,
+      "saving_pct": 20.17683229183591,
+      "hours_below_target_now_pct": 6.8181818181818175,
+      "hours_below_target_kairos_pct": 3.6363636363636362
+    },
+    {
+      "batch": 45,
+      "kwh_now": 36079.39416345174,
+      "kwh_kairos": 26656.688345156315,
+      "saving_pct": 26.116585482581588,
+      "hours_below_target_now_pct": 0.0,
+      "hours_below_target_kairos_pct": 0.0
+    },
+    {
+      "batch": 49,
+      "kwh_now": 31938.513905897962,
+      "kwh_kairos": 23544.70163739961,
+      "saving_pct": 26.281161024678422,
+      "hours_below_target_now_pct": 0.0,
+      "hours_below_target_kairos_pct": 0.0
+    },
+    {
+      "batch": 57,
+      "kwh_now": 32220.572589734875,
+      "kwh_kairos": 23758.167417916724,
+      "saving_pct": 26.26398133754514,
+      "hours_below_target_now_pct": 0.0,
+      "hours_below_target_kairos_pct": 0.0
+    },
+    {
+      "batch": 65,
+      "kwh_now": 31797.484563979502,
+      "kwh_kairos": 23437.96874714105,
+      "saving_pct": 26.289865162190196,
+      "hours_below_target_now_pct": 0.0,
+      "hours_below_target_kairos_pct": 0.0
+    },
+    {
+      "batch": 68,
+      "kwh_now": 31656.455222061042,
+      "kwh_kairos": 23373.032308542395,
+      "saving_pct": 26.16661548304379,
+      "hours_below_target_now_pct": 0.45454545454545453,
+      "hours_below_target_kairos_pct": 0.45454545454545453
+    },
+    {
+      "batch": 70,
+      "kwh_now": 31656.455222061042,
+      "kwh_kairos": 23373.032308542395,
+      "saving_pct": 26.16661548304379,
+      "hours_below_target_now_pct": 0.45454545454545453,
+      "hours_below_target_kairos_pct": 0.45454545454545453
+    },
+    {
+      "batch": 73,
+      "kwh_now": 32502.631273571795,
+      "kwh_kairos": 23971.63319843384,
+      "saving_pct": 26.247099821959928,
+      "hours_below_target_now_pct": 0.0,
+      "hours_below_target_kairos_pct": 0.0
+    },
+    {
+      "batch": 85,
+      "kwh_now": 27425.574964507265,
+      "kwh_kairos": 20129.24914912579,
+      "saving_pct": 26.604094261739252,
+      "hours_below_target_now_pct": 0.0,
+      "hours_below_target_kairos_pct": 0.0
+    }
+  ],
+  "sensitivity": [
+    {
+      "margin_pct": 5.0,
+      "target_do_pct": 30.0,
+      "mean_saving_pct": 26.007756748904416,
+      "kwh_saved_per_batch": 8273.944943264487,
+      "co2_saved_kg_per_batch": 6015.157973753282,
+      "inr_saved_per_batch": 66191.5595461159
+    },
+    {
+      "margin_pct": 15.0,
+      "target_do_pct": 40.0,
+      "mean_saving_pct": 25.670957574220207,
+      "kwh_saved_per_batch": 8167.326263342309,
+      "co2_saved_kg_per_batch": 5937.646193449858,
+      "inr_saved_per_batch": 65338.61010673847
+    },
+    {
+      "margin_pct": 20.0,
+      "target_do_pct": 45.0,
+      "mean_saving_pct": 25.464649514345485,
+      "kwh_saved_per_batch": 8102.014227130664,
+      "co2_saved_kg_per_batch": 5890.164343123993,
+      "inr_saved_per_batch": 64816.11381704531
+    },
+    {
+      "margin_pct": 30.0,
+      "target_do_pct": 55.0,
+      "mean_saving_pct": 24.632508501264507,
+      "kwh_saved_per_batch": 7839.10315029072,
+      "co2_saved_kg_per_batch": 5699.027990261353,
+      "inr_saved_per_batch": 62712.82520232576
+    }
+  ],
+  "pareto": {
+    "batch": 4,
+    "actual_kwh": 31677.761090445176,
+    "target_do_pct": 35.0,
+    "points": [
+      {
+        "rpm": 80.0,
+        "aeration": 30.0,
+        "kwh": 14816.602478307908,
+        "do_p5_pct": 24.320206876214314,
+        "hours_below_target_pct": 17.620345140781108
+      },
+      {
+        "rpm": 80.0,
+        "aeration": 35.0,
+        "kwh": 16468.10247830793,
+        "do_p5_pct": 29.934126379370696,
+        "hours_below_target_pct": 5.722070844686648
+      },
+      {
+        "rpm": 80.0,
+        "aeration": 40.0,
+        "kwh": 18119.602478307952,
+        "do_p5_pct": 34.45937660165073,
+        "hours_below_target_pct": 5.086285195277021
+      },
+      {
+        "rpm": 80.0,
+        "aeration": 45.0,
+        "kwh": 19771.102478307977,
+        "do_p5_pct": 38.20770766911136,
+        "hours_below_target_pct": 1.4532243415077202
+      },
+      {
+        "rpm": 80.0,
+        "aeration": 50.0,
+        "kwh": 21422.602478308,
+        "do_p5_pct": 41.378684317431095,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 80.0,
+        "aeration": 55.0,
+        "kwh": 23074.102478308025,
+        "do_p5_pct": 44.10676856431461,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 80.0,
+        "aeration": 60.0,
+        "kwh": 24725.602478308047,
+        "do_p5_pct": 46.4863050833761,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 80.0,
+        "aeration": 65.0,
+        "kwh": 26377.102478308072,
+        "do_p5_pct": 48.58570497827404,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 80.0,
+        "aeration": 70.0,
+        "kwh": 28028.602478308094,
+        "do_p5_pct": 50.45594563309338,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 80.0,
+        "aeration": 75.0,
+        "kwh": 29680.102478308116,
+        "do_p5_pct": 52.1358961756976,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 90.0,
+        "aeration": 30.0,
+        "kwh": 16896.582434934444,
+        "do_p5_pct": 34.29522850244459,
+        "hours_below_target_pct": 5.086285195277021
+      },
+      {
+        "rpm": 90.0,
+        "aeration": 35.0,
+        "kwh": 18548.082434934466,
+        "do_p5_pct": 39.16920189660056,
+        "hours_below_target_pct": 0.8174386920980926
+      },
+      {
+        "rpm": 90.0,
+        "aeration": 40.0,
+        "kwh": 20199.58243493449,
+        "do_p5_pct": 43.09799873326529,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 90.0,
+        "aeration": 45.0,
+        "kwh": 21851.082434934513,
+        "do_p5_pct": 46.35227872160849,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 90.0,
+        "aeration": 50.0,
+        "kwh": 23502.58243493454,
+        "do_p5_pct": 49.105302844720825,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 90.0,
+        "aeration": 55.0,
+        "kwh": 25154.08243493456,
+        "do_p5_pct": 51.473810271457246,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 90.0,
+        "aeration": 60.0,
+        "kwh": 26805.582434934586,
+        "do_p5_pct": 53.539710517765975,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 90.0,
+        "aeration": 65.0,
+        "kwh": 28457.082434934608,
+        "do_p5_pct": 55.362397719759755,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 90.0,
+        "aeration": 70.0,
+        "kwh": 30108.582434934633,
+        "do_p5_pct": 56.98613015609648,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 90.0,
+        "aeration": 75.0,
+        "kwh": 31760.082434934655,
+        "do_p5_pct": 58.44465378536248,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 100.0,
+        "aeration": 30.0,
+        "kwh": 19494.161090445003,
+        "do_p5_pct": 42.098752529979784,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 100.0,
+        "aeration": 35.0,
+        "kwh": 21145.661090445024,
+        "do_p5_pct": 46.3938612903507,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 100.0,
+        "aeration": 40.0,
+        "kwh": 22797.161090445046,
+        "do_p5_pct": 49.85604878015304,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 100.0,
+        "aeration": 45.0,
+        "kwh": 24448.66109044507,
+        "do_p5_pct": 52.72382940927834,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 100.0,
+        "aeration": 50.0,
+        "kwh": 26100.161090445094,
+        "do_p5_pct": 55.149886564795466,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 100.0,
+        "aeration": 55.0,
+        "kwh": 27751.66109044512,
+        "do_p5_pct": 57.237094716111365,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 100.0,
+        "aeration": 60.0,
+        "kwh": 29403.16109044514,
+        "do_p5_pct": 59.057635274788275,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 100.0,
+        "aeration": 65.0,
+        "kwh": 31054.661090445166,
+        "do_p5_pct": 60.66384834482394,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 100.0,
+        "aeration": 70.0,
+        "kwh": 32706.161090445188,
+        "do_p5_pct": 62.09473580518029,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 100.0,
+        "aeration": 75.0,
+        "kwh": 34357.66109044521,
+        "do_p5_pct": 63.38003572593484,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 110.0,
+        "aeration": 30.0,
+        "kwh": 22666.84941138224,
+        "do_p5_pct": 48.356377437763264,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 110.0,
+        "aeration": 35.0,
+        "kwh": 24318.349411382267,
+        "do_p5_pct": 52.187296206814004,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 110.0,
+        "aeration": 40.0,
+        "kwh": 25969.84941138229,
+        "do_p5_pct": 55.27531091764778,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 110.0,
+        "aeration": 45.0,
+        "kwh": 27621.349411382314,
+        "do_p5_pct": 57.833158751211734,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 110.0,
+        "aeration": 50.0,
+        "kwh": 29272.849411382336,
+        "do_p5_pct": 59.997021975727094,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 110.0,
+        "aeration": 55.0,
+        "kwh": 30924.349411382358,
+        "do_p5_pct": 61.85865699544223,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 110.0,
+        "aeration": 60.0,
+        "kwh": 32575.849411382384,
+        "do_p5_pct": 63.48244428120382,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 110.0,
+        "aeration": 65.0,
+        "kwh": 34227.349411382405,
+        "do_p5_pct": 64.91506732764859,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 110.0,
+        "aeration": 70.0,
+        "kwh": 35878.84941138243,
+        "do_p5_pct": 66.19131292097441,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 110.0,
+        "aeration": 75.0,
+        "kwh": 37530.349411382456,
+        "do_p5_pct": 67.33770521625422,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 120.0,
+        "aeration": 30.0,
+        "kwh": 26472.158364288855,
+        "do_p5_pct": 53.476709347504524,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 120.0,
+        "aeration": 35.0,
+        "kwh": 28123.658364288876,
+        "do_p5_pct": 56.92780240635923,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 120.0,
+        "aeration": 40.0,
+        "kwh": 29775.1583642889,
+        "do_p5_pct": 59.709648427291796,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 120.0,
+        "aeration": 45.0,
+        "kwh": 31426.658364288924,
+        "do_p5_pct": 62.0138922487306,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 120.0,
+        "aeration": 50.0,
+        "kwh": 33078.158364288945,
+        "do_p5_pct": 63.963214018423564,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 120.0,
+        "aeration": 55.0,
+        "kwh": 34729.658364288975,
+        "do_p5_pct": 65.64027272991686,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 120.0,
+        "aeration": 60.0,
+        "kwh": 36381.15836428899,
+        "do_p5_pct": 67.10306569650771,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 120.0,
+        "aeration": 65.0,
+        "kwh": 38032.65836428902,
+        "do_p5_pct": 68.39364786480725,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 120.0,
+        "aeration": 70.0,
+        "kwh": 39684.15836428904,
+        "do_p5_pct": 69.54335700092972,
+        "hours_below_target_pct": 0.0
+      },
+      {
+        "rpm": 120.0,
+        "aeration": 75.0,
+        "kwh": 41335.65836428906,
+        "do_p5_pct": 70.57608745841863,
+        "hours_below_target_pct": 0.0
+      }
+    ]
+  },
+  "yield_check_pct_change_at_70pct": {
+    "mean": 0.631402107449376,
+    "min": -1.4654375821763999,
+    "max": 2.8153213100040033
+  },
+  "notes": [
+    "Agitation is constant in IndPenSim, so agitation effects are physics-only (assumed).",
+    "Quasi-steady oxygen balance; kLa in viscous broths can be lower than van't Riet predicts.",
+    "Savings are model estimates; a pilot would confirm them with step tests."
+  ]
+}
