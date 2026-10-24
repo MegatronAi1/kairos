@@ -115,14 +115,7 @@ class _PairScreenState extends ConsumerState<PairScreen> {
           children: [
             Row(
               children: [
-                Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: KColors.accentX500, width: 2.5),
-                  ),
-                ),
+                Image.asset('assets/brand/kairos_mark.png', width: 30, height: 30, semanticLabel: 'Kairos'),
                 const SizedBox(width: KSpace.s2),
                 Text('Kairos', style: KText.display(KSize.xl)),
               ],

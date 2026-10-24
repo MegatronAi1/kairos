@@ -15,9 +15,10 @@ import { useLiveSocket } from "@/lib/ws/socket";
 export function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <span className="flex items-center gap-2">
-      <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden>
-        <circle cx="16" cy="16" r="12" fill="none" stroke="var(--color-accent-500)" strokeWidth="3" />
-        <circle cx="16" cy="16" r="4.5" fill="var(--color-accent-500)" />
+      <svg width="26" height="26" viewBox="0 0 64 64" aria-hidden>
+        <path d="M48.91 38.16 A18 18 0 1 1 45.79 20.43" fill="none" stroke="var(--color-accent-500)" strokeWidth="6" />
+        <circle cx="49.73" cy="28.87" r="4.6" fill="var(--color-state-watch)" />
+        <circle cx="32" cy="32" r="6" fill="var(--color-accent-500)" />
       </svg>
       {!compact && <span className="display text-lg font-semibold tracking-tight">Kairos</span>}
     </span>

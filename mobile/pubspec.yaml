@@ -28,6 +28,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/sounds/
+    - assets/brand/
   fonts:
     - family: Inter
       fonts:
