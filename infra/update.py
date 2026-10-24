@@ -24,7 +24,8 @@ def my_ip() -> str:
 def wait_healthy(dns: str, timeout_s: int = 900) -> None:
     url = f"http://{dns}:8080/api/v1/healthz"
     start = time.time()
-    while time.time() - start < timeout_s:
+    # Count attempts, not wall time: a laptop that sleeps mid-wait must not time out.
+    for _ in range(timeout_s // 15):
         try:
             with urllib.request.urlopen(url, timeout=5) as r:
                 if r.status == 200:
