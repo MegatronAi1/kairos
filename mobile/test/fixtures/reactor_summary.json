@@ -1,0 +1,2 @@
+{"id":"R2","batch_id":91,"strategy":"fault","is_fault_batch":true,"running":true,"speed_h_per_s":1.0,
+ "t_h":71.6,"t_end_h":258.0,"progress":0.3113,"state":"alarm","acknowledged":false,"last_tick":null,"last_insight":null}

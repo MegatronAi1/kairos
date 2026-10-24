@@ -1,0 +1,3 @@
+{"type":"alarm","reactor_id":"R2","ts":1792828830000,"t_h":71.2,"progress":0.3096,"batch_id":91,
+ "state":"alarm","previous_state":"watch","severity":"critical",
+ "contributors":[{"var":"do_pct","pct":46.0,"dir":"low"},{"var":"feed","pct":28.0,"dir":"high"}],"ponr_hours":4.5}

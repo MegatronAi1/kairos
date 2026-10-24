@@ -1,5 +1,5 @@
 name: kairos_pager
-description: "A new Flutter project."
+description: "Kairos Pager: reactor alarms and the Kairos copilot on the operator's phone."
 publish_to: 'none'
 version: 0.1.0
 
@@ -26,3 +26,12 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/sounds/
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter.ttf
+    - family: JetBrainsMono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono.ttf

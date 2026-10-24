@@ -1,0 +1,4 @@
+{"type":"insight","reactor_id":"R2","ts":1792828830500,"t_h":71.2,"progress":0.3096,"batch_id":91,
+ "card":{"title":"Oxygen limitation developing","summary":"Dissolved oxygen is falling while sugar feed stays high.",
+ "action":"Reduce sugar feed 10% for 3 h","expected_effect":"+6 to +11% final yield","confidence":"medium",
+ "ponr_hours":4.5,"evidence":["fault_detector","yield_model","energy_model"]},"source":"agent"}
