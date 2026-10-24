@@ -1,0 +1,536 @@
+# Kairos process catalog: commercial alternative-protein fermentation processes.
+# Researched October 2026. Company facts are cited; process values for proprietary
+# processes are typical published ranges for the host organism, not company values.
+
+notes:
+  - "Setpoints for proprietary processes are typical ranges for the host organism or process type, not company operating values."
+  - "Provenance 'published' means the value appears in the cited source; 'assumed' means a typical engineering value with no specific public source."
+  - "Host organisms for precision-fermentation products are taken from FDA GRAS notices and response letters where available."
+  - "Phase durations are indicative. Companies do not publish batch schedules."
+  - "Live replay data is the IndPenSim penicillin fed-batch benchmark; benchmark_fit says how well it stands in for each process."
+
+processes:
+
+  # ---------------------------------------------------------------- biomass
+  - id: mycoprotein
+    family: biomass
+    name: Mycoprotein
+    product: "Whole fungal biomass, textured into meat-alternative foods"
+    example: {company: "Quorn Foods (Marlow Foods)", product_name: "Quorn mycoprotein", url: "https://www.quorn.co.uk"}
+    naming_note: null
+    organism: "Fusarium venenatum A3/5"
+    organism_type: filamentous fungus
+    reactor: airlift
+    reactor_note: "Continuous pressure-cycle airlift loop; current units 155 m³ and about 50 m tall"
+    mode: continuous
+    product_location: biomass
+    carbon_source: "Glucose, kept in excess"
+    nitrogen_source: "Ammonia, fed with the sterile air and also used for pH control"
+    gases: ["air", "O2 supplement in the downcomer"]
+    light: false
+    setpoints:
+      temp_c: {min: 30, max: 30, provenance: published, source: "https://davidmoore.org.uk/21st_century_guidebook_to_fungi_platinum/Ch17_18.htm"}
+      ph: {min: 6.0, max: 6.0, provenance: published, source: "https://davidmoore.org.uk/21st_century_guidebook_to_fungi_platinum/Ch17_18.htm"}
+      dilution_rate_per_h: {min: 0.17, max: 0.20, provenance: published, source: "https://davidmoore.org.uk/21st_century_guidebook_to_fungi_platinum/Ch17_18.htm"}
+      biomass_g_l: {min: 10, max: 15, provenance: published, source: "https://davidmoore.org.uk/21st_century_guidebook_to_fungi_platinum/Ch17_18.htm"}
+      rna_reduction_temp_c: {min: 68, max: 68, provenance: published, source: "https://davidmoore.org.uk/21st_century_guidebook_to_fungi_platinum/Ch17_18.htm"}
+      do_pct: {min: 20, max: 40, provenance: assumed, source: "Not published. Riser off-gas holds about 10% O2 (published); probe target is a typical aerobic-fungus margin."}
+    phases:
+      - name: "Inoculation and batch growth"
+        duration: "About 4 days"
+        goal: "Grow a small batch inoculum up to the density for continuous flow"
+        controls:
+          - {param: "temperature", action: "Hold about 30 °C with the downcomer heat exchanger"}
+          - {param: "dissolved oxygen", action: "Raise air flow as oxygen demand grows"}
+      - name: "Continuous growth"
+        duration: "Up to about 1,000 h (about 6 weeks)"
+        goal: "Steady biomass output at a fixed dilution rate"
+        controls:
+          - {param: "dilution rate", action: "Hold 0.17-0.20 per hour with glucose in excess"}
+          - {param: "pH", action: "Hold 6.0 with ammonia feed"}
+          - {param: "morphology", action: "Watch for branched colonial mutants that end the run"}
+      - name: "RNA reduction"
+        duration: "20-30 min per lot"
+        goal: "Cut RNA from about 8-9% to under 2% of dry weight"
+        controls:
+          - {param: "temperature", action: "Heat broth to about 68 °C so native RNases degrade RNA"}
+      - name: "Harvest and texturing"
+        duration: "Continuous, then about 2 weeks frozen storage"
+        goal: "Dewater to paste, form, and freeze to develop meat-like texture"
+        controls:
+          - {param: "solids", action: "Centrifuge to about 30% total solids"}
+    control_loops:
+      - {measure: "Temperature probe", actuator: "Downcomer heat-exchanger coolant", purpose: "Remove metabolic heat at 30 °C"}
+      - {measure: "pH probe", actuator: "Ammonia feed", purpose: "Hold pH 6 and supply nitrogen"}
+      - {measure: "DO probe and off-gas O2", actuator: "Air flow and O2 supplement", purpose: "Keep the fungus aerobic in a tall vessel"}
+      - {measure: "Feed and broth flow meters", actuator: "Medium feed pump", purpose: "Hold the dilution rate"}
+    critical_risks:
+      - "Contamination over weeks of continuous running"
+      - "Colonial mutants that spoil hyphal texture, forcing shutdown"
+      - "Oxygen limitation in the riser top as biomass rises"
+      - "Incomplete RNA reduction, failing the food limit"
+    energy_hotspots: ["Air compression for the airlift", "Cooling a large exothermic broth", "RNA-reduction heat step", "Freezing for texture"]
+    kairos:
+      yield_signal: "Biomass productivity (kg/h) from dilution rate, broth density and off-gas CO2"
+      fault_signatures:
+        - "Rising CO2 with falling DO: oxygen limitation or contamination"
+        - "Drifting broth viscosity or filtration: colonial mutant takeover"
+        - "Ammonia use off trend at steady feed: changed growth yield"
+      energy_levers: ["Air flow vs DO margin", "Coolant flow vs temperature band", "Heat recovery from RNA step"]
+      benchmark_fit: high
+      benchmark_fit_why: "Both aerobic filamentous fungi limited by oxygen transfer and viscosity; Quorn runs continuous airlift, not fed-batch stirred tank"
+    sources:
+      - {title: "Moore et al., 21st Century Guidebook to Fungi, 17.18 The Quorn fermentation", url: "https://davidmoore.org.uk/21st_century_guidebook_to_fungi_platinum/Ch17_18.htm"}
+      - {title: "Microbiology Society: Mycoprotein production and food sustainability", url: "https://microbiologysociety.org/resource/mycoprotein-production-and-food-sustainability.html"}
+      - {title: "Wiebe, Quorn mycoprotein, Mycologist 18 (2004)", url: "https://davidmoore.org.uk/assets/fungi4schools/Reprints/Mycologist_articles/Post-16/Foods/V18pp017-020_Quorn.pdf"}
+
+  - id: yeast_protein
+    family: biomass
+    name: Yeast protein
+    product: "Protein ingredient made from food yeast biomass"
+    example: {company: "Revyve (various producers)", product_name: "Revyve yeast protein", url: "https://www.greenqueen.com.hk/?p=81864"}
+    naming_note: "Several firms make yeast protein (Revyve, Intake, Saccha). Revyve buys primary-grown S. cerevisiae from yeast producers; growth follows standard baker's-yeast fed-batch practice."
+    organism: "Saccharomyces cerevisiae"
+    organism_type: yeast
+    reactor: stirred_tank
+    reactor_note: "Aerobic fed-batch yeast propagator, as in baker's yeast production; Revyve's own step is protein processing"
+    mode: fed_batch
+    product_location: intracellular
+    carbon_source: "Sugar from molasses or glucose syrup"
+    nitrogen_source: "Ammonia or ammonium salts"
+    gases: ["air"]
+    light: false
+    setpoints:
+      temp_c: {min: 28, max: 32, provenance: assumed, source: "Typical S. cerevisiae propagation range; producer values not public"}
+      ph: {min: 4.5, max: 5.0, provenance: published, source: "https://www.infona.pl/resource/bwmeta1.element.wiley-bab-v-66-i-3-bab1735"}
+      rq: {min: 0.9, max: 1.0, provenance: published, source: "https://www.infona.pl/resource/bwmeta1.element.wiley-bab-v-66-i-3-bab1735"}
+      do_pct: {min: 15, max: 30, provenance: assumed, source: "Typical aerobic yeast margin; not published for this process"}
+    phases:
+      - name: "Batch start"
+        duration: "Several hours"
+        goal: "Start growth at low sugar to avoid ethanol"
+        controls:
+          - {param: "glucose", action: "Keep initial sugar near 2 g/L or below"}
+      - name: "Exponential fed-batch"
+        duration: "About 12-20 h (assumed)"
+        goal: "Grow biomass fully respiratory, no ethanol overflow"
+        controls:
+          - {param: "sugar feed", action: "Ramp feed to hold RQ near 1"}
+          - {param: "dissolved oxygen", action: "Raise air and agitation as demand grows"}
+          - {param: "pH", action: "Hold about 4.8 with ammonia"}
+      - name: "Maturation"
+        duration: "About 1 h (assumed)"
+        goal: "Stop feeding so cells finish budding"
+        controls:
+          - {param: "sugar feed", action: "Ramp down to zero"}
+      - name: "Harvest and protein processing"
+        duration: "Hours"
+        goal: "Separate cream yeast, break cells, recover protein"
+        controls:
+          - {param: "separation", action: "Centrifuge to yeast cream, then mechanical cell disruption"}
+    control_loops:
+      - {measure: "Off-gas O2 and CO2 (RQ)", actuator: "Sugar feed pump", purpose: "Avoid Crabtree ethanol overflow"}
+      - {measure: "DO probe", actuator: "Air flow and agitation", purpose: "Keep respiration fully aerobic"}
+      - {measure: "pH probe", actuator: "Ammonia dosing", purpose: "Hold pH and supply nitrogen"}
+      - {measure: "Temperature probe", actuator: "Cooling water", purpose: "Remove heat at high growth rate"}
+    critical_risks:
+      - "Ethanol overflow cutting biomass yield"
+      - "Oxygen limitation at high cell density"
+      - "Bacterial contamination of molasses feeds"
+    energy_hotspots: ["Aeration compressors", "Cooling", "Centrifugation and cell disruption", "Drying"]
+    kairos:
+      yield_signal: "Biomass yield on sugar from feed totals and off-gas CO2"
+      fault_signatures:
+        - "RQ above 1.1: sugar overfeed and ethanol formation"
+        - "Falling DO with rising feed: oxygen transfer limit"
+      energy_levers: ["Air flow vs DO margin", "Feed profile vs ethanol risk"]
+      benchmark_fit: medium
+      benchmark_fit_why: "Both aerobic fed-batch with feed and oxygen control; yeast broth is thin, not viscous mycelium"
+    sources:
+      - {title: "Green Queen: Revyve raises funding for yeast protein (S. cerevisiae, primary grown yeast)", url: "https://www.greenqueen.com.hk/?p=81864"}
+      - {title: "Baker's yeast fed-batch: pH 4.8 and RQ 0.9-1.0 control (Biotechnol Appl Biochem 66:3)", url: "https://www.infona.pl/resource/bwmeta1.element.wiley-bab-v-66-i-3-bab1735"}
+      - {title: "Dabros et al. 2018, Crabtree control in fed-batch yeast", url: "https://arodes.hes-so.ch/record/2614/files/Dabros_2018_Crabtree_Ctrl.pdf"}
+
+  - id: microalgae
+    family: biomass
+    name: Microalgae protein
+    product: "Chlorella biomass and protein concentrate grown with sugar and light"
+    example: {company: "Brevel", product_name: "Purallis chlorella and microalgae protein concentrate", url: "https://www.nutritioninsight.com/news/brevel-chlorella-nutraceuticals-microalgae-supplements.html"}
+    naming_note: "No microalgae brand called Growell was found. Brevel is the closest sound-alike, and its sugar-plus-light fermentation is publicly described."
+    organism: "Chlorella vulgaris (non-GM)"
+    organism_type: microalga
+    reactor: photobioreactor
+    reactor_note: "Closed, sterile indoor fermenter with added light ('illuminated fermentation'); light delivery design not public"
+    mode: fed_batch
+    product_location: biomass
+    carbon_source: "Sugars"
+    nitrogen_source: "Not disclosed; urea or nitrate typical for Chlorella"
+    gases: ["air"]
+    light: true
+    setpoints:
+      temp_c: {min: 30, max: 36, provenance: published, source: "https://asep.lib.cas.cz/arl-cav/cs/detail-cav_un_epca-0388567-Production-of-highdensity-Chlorella-culture-grown-in-fermenters/ (36 °C); https://www.frontiersin.org/journals/bioengineering-and-biotechnology/articles/10.3389/fbioe.2021.774854/pdf (30 °C)"}
+      ph: {min: 6.3, max: 7.0, provenance: published, source: "https://www.frontiersin.org/journals/bioengineering-and-biotechnology/articles/10.3389/fbioe.2021.774854/pdf"}
+      do_pct: {min: 20, max: 40, provenance: assumed, source: "Typical for heterotrophic microalgae; Brevel values not public"}
+      light_umol_m2_s: {min: 50, max: 300, provenance: assumed, source: "Typical Chlorella culture range; Brevel light dose not public"}
+    phases:
+      - name: "Inoculum and batch growth"
+        duration: "About 1 day (assumed)"
+        goal: "Start an axenic culture on sugar before feeding"
+        controls:
+          - {param: "sterility", action: "Sterile medium and closed vessel"}
+      - name: "Fed-batch growth with light"
+        duration: "About 1.5-3 days (assumed)"
+        goal: "Build dense biomass while light keeps chlorophyll and nutrients"
+        controls:
+          - {param: "glucose", action: "Feed to stay below the 20-50 g/L inhibition zone"}
+          - {param: "light", action: "Hold illumination as cells get denser"}
+          - {param: "dissolved oxygen", action: "Raise air flow as sugar uptake rises"}
+      - name: "Harvest"
+        duration: "Hours"
+        goal: "Concentrate biomass from broth"
+        controls:
+          - {param: "separation", action: "Centrifuge the broth"}
+      - name: "Cell breaking and drying"
+        duration: "Hours"
+        goal: "Open tough cell walls and make protein powder"
+        controls:
+          - {param: "disruption", action: "Bead-mill cells without harsh chemicals"}
+    control_loops:
+      - {measure: "DO probe", actuator: "Air flow and agitation", purpose: "Keep sugar metabolism aerobic"}
+      - {measure: "Glucose analyser", actuator: "Sugar feed pump", purpose: "Avoid substrate inhibition"}
+      - {measure: "PAR light sensor", actuator: "Light intensity", purpose: "Keep cells lit as density rises"}
+      - {measure: "pH probe", actuator: "Base or acid dosing", purpose: "Hold pH near neutral"}
+    critical_risks:
+      - "Bacterial or yeast contamination on a sugar medium"
+      - "Light falling off with depth as cells thicken"
+      - "Salt build-up from pH control inhibiting growth"
+    energy_hotspots: ["Lighting", "Aeration", "Bead milling", "Drying"]
+    kairos:
+      yield_signal: "Biomass on sugar and protein content from feed and optical density"
+      fault_signatures:
+        - "Optical density stalls while sugar accumulates: inhibition or limitation"
+        - "DO drops faster than expected: contaminant using the sugar"
+      energy_levers: ["Light intensity vs growth gain", "Air flow vs DO margin"]
+      benchmark_fit: low
+      benchmark_fit_why: "Aerobic fed-batch on sugar matches, but light and single-cell algae have no penicillin analogue"
+    sources:
+      - {title: "Nutrition Insight: Brevel 'illuminated fermentation' chlorella", url: "https://www.nutritioninsight.com/news/brevel-chlorella-nutraceuticals-microalgae-supplements.html"}
+      - {title: "FoodIngredientsFirst: Brevel opens commercial microalgae protein plant", url: "https://www.foodingredientsfirst.com/news/brevel-targets-plant-based-food-with-new-commercial-plant-for-microalgae-protein-supply.html"}
+      - {title: "High-density Chlorella culture grown in fermenters (36 °C, glucose fed-batch)", url: "https://asep.lib.cas.cz/arl-cav/cs/detail-cav_un_epca-0388567-Production-of-highdensity-Chlorella-culture-grown-in-fermenters/"}
+      - {title: "Heterotrophic Chlorella sorokiniana protein production (30 °C, pH 6.5)", url: "https://www.frontiersin.org/journals/bioengineering-and-biotechnology/articles/10.3389/fbioe.2021.774854/pdf"}
+
+  - id: solein
+    family: biomass
+    name: Solein (gas fermentation)
+    product: "Dried, heat-inactivated bacterial biomass used as protein powder"
+    example: {company: "Solar Foods", product_name: "Solein", url: "https://solarfoods.com"}
+    naming_note: null
+    organism: "Xanthobacter sp. SoF1 (non-GM, hydrogen-oxidizing)"
+    organism_type: bacterium
+    reactor: gas_fermenter
+    reactor_note: "Continuous gas-fed bioreactor, 20,000 L at Factory 01 (Finland); internal design not public"
+    mode: continuous
+    product_location: biomass
+    carbon_source: "Carbon dioxide"
+    nitrogen_source: "Nitrogen supplied as a mineral input; exact form not disclosed"
+    gases: ["H2", "O2", "CO2"]
+    light: false
+    setpoints:
+      productivity_g_l_h: {min: 0.8, max: 1.0, provenance: published, source: "https://solarfoods.com/?p=20611"}
+      temp_c: {min: 28, max: 32, provenance: assumed, source: "Typical for mesophilic Xanthobacter; Solar Foods values not public"}
+      ph: {min: 6.5, max: 7.0, provenance: assumed, source: "Typical for hydrogen-oxidizing bacteria; not public"}
+      do_pct: {min: 5, max: 20, provenance: assumed, source: "O2 kept low to limit flammable gas mix; values not public"}
+    phases:
+      - name: "Start-up and batch growth"
+        duration: "Days (assumed)"
+        goal: "Grow cells on gas before switching to continuous flow"
+        controls:
+          - {param: "gas mix", action: "Feed H2, O2 and CO2 at a safe ratio"}
+      - name: "Continuous cultivation"
+        duration: "Weeks (assumed)"
+        goal: "Steady biomass output on gases and minerals"
+        controls:
+          - {param: "gas feed", action: "Match H2 and O2 supply to uptake"}
+          - {param: "dilution", action: "Hold broth outflow for steady density"}
+          - {param: "temperature", action: "Cool the exothermic culture"}
+      - name: "Inactivation and drying"
+        duration: "Continuous"
+        goal: "Heat-kill cells and dry to powder"
+        controls:
+          - {param: "heat treatment", action: "Heat-inactivate harvested cells before drying"}
+    control_loops:
+      - {measure: "Off-gas H2 and O2 analyser", actuator: "Gas mass-flow controllers", purpose: "Keep the headspace outside the flammable range"}
+      - {measure: "DO probe", actuator: "O2 feed", purpose: "Give cells oxygen without excess"}
+      - {measure: "pH probe", actuator: "Base dosing", purpose: "Hold pH as CO2 dissolves"}
+      - {measure: "Temperature probe", actuator: "Cooling water", purpose: "Remove heat of hydrogen oxidation"}
+    critical_risks:
+      - "Hydrogen and oxygen mixture flammability"
+      - "Gas-liquid mass transfer limiting growth (H2 is poorly soluble)"
+      - "Contamination over long continuous runs"
+    energy_hotspots: ["Electrolysis to make hydrogen", "Gas compression and recirculation", "Cooling", "Drying"]
+    kairos:
+      yield_signal: "Productivity (g/L/h) and gas-use efficiency (O2/CO2 ratio about 2.6-2.7 reported)"
+      fault_signatures:
+        - "H2 uptake falls at steady feed: mass-transfer or culture health problem"
+        - "Off-gas O2 rising toward limits: unsafe gas mix"
+      energy_levers: ["Hydrogen utilisation per kg biomass", "Gas recycle rate vs compressor power"]
+      benchmark_fit: low
+      benchmark_fit_why: "Continuous gas-substrate bacterial culture; only oxygen transfer is shared with penicillin fed-batch"
+    sources:
+      - {title: "Solar Foods: 100-fold scale-up at Factory 01 (20,000 L, 0.8 g/L/h)", url: "https://solarfoods.com/?p=20611"}
+      - {title: "Solar Foods press release PDF", url: "https://solarfoods.com/wp-content/uploads/2025/05/Press-release-Solar-Foods-confirms-successful-100-fold-industrial-scaling-of-Soleins-production-technology.pdf"}
+      - {title: "EU novel food application summary: Xanthobacter sp. SoF1, continuous bioprocess", url: "https://food.ec.europa.eu/system/files/2023-08/novel-food_sum_ongoing-app_2021-1730.pdf"}
+      - {title: "Pander et al., hydrogen-oxidizing bacteria for food and feed protein", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC9996702"}
+
+  # -------------------------------------------------------------- precision
+  - id: whey
+    family: precision
+    name: Fermentation-derived whey protein
+    product: "Beta-lactoglobulin identical to cow's milk whey protein"
+    example: {company: "Perfect Day", product_name: "Animal-free whey protein (beta-lactoglobulin)", url: "https://www.foodnavigator.com/Article/2020/04/14/Perfect-Day-secures-no-objections-letter-from-FDA-for-non-animal-whey-protein/"}
+    naming_note: null
+    organism: "Trichoderma reesei QM6a-PD1 (FDA GRN 863)"
+    organism_type: filamentous fungus
+    reactor: stirred_tank
+    reactor_note: "Aerobic submerged stirred-tank fermentation; scale and mode not public"
+    mode: fed_batch
+    product_location: secreted
+    carbon_source: "Sugars; exact feed not disclosed"
+    nitrogen_source: "Ammonia typical for T. reesei; not disclosed"
+    gases: ["air"]
+    light: false
+    setpoints:
+      temp_c: {min: 25, max: 28, provenance: assumed, source: "Typical T. reesei protein production; Perfect Day values not public"}
+      ph: {min: 4.0, max: 5.0, provenance: assumed, source: "Typical T. reesei range; not public"}
+      do_pct: {min: 20, max: 30, provenance: assumed, source: "Typical T. reesei fed-batch DO floor; not public"}
+    phases:
+      - name: "Seed and batch growth"
+        duration: "1-2 days (assumed)"
+        goal: "Grow fungal mycelium on an initial sugar charge"
+        controls:
+          - {param: "temperature", action: "Hold about 28 °C"}
+          - {param: "dissolved oxygen", action: "Raise agitation and air as mycelium thickens"}
+      - name: "Fed-batch production"
+        duration: "3-6 days (assumed)"
+        goal: "Feed sugar slowly so the fungus secretes protein"
+        controls:
+          - {param: "carbon feed", action: "Limit sugar to avoid catabolite repression"}
+          - {param: "pH", action: "Hold low pH with ammonia dosing"}
+          - {param: "dissolved oxygen", action: "Keep above floor as viscosity rises"}
+      - name: "Cell removal and purification"
+        duration: "1-2 days (assumed)"
+        goal: "Filter out the fungus and purify secreted protein"
+        controls:
+          - {param: "filtration", action: "Remove cells, then concentrate the protein"}
+    control_loops:
+      - {measure: "DO probe", actuator: "Agitation, air flow and back-pressure", purpose: "Beat oxygen limits in viscous broth"}
+      - {measure: "pH probe", actuator: "Ammonia dosing", purpose: "Hold pH and supply nitrogen"}
+      - {measure: "Off-gas CO2 and O2", actuator: "Sugar feed pump", purpose: "Keep carbon-limited for secretion"}
+      - {measure: "Temperature probe", actuator: "Jacket cooling", purpose: "Hold production temperature"}
+    critical_risks:
+      - "Oxygen limitation as mycelial broth thickens"
+      - "Protease activity degrading product"
+      - "Contamination in a multi-day aerobic run"
+    energy_hotspots: ["Agitation of viscous broth", "Aeration", "Cooling", "Filtration and drying"]
+    kairos:
+      yield_signal: "Titre and productivity from off-gas, feed and at-line protein assays"
+      fault_signatures:
+        - "Falling DO at constant feed: viscosity or oxygen-transfer limit"
+        - "Feed rising but CO2 flat: overfeeding or stressed culture"
+      energy_levers: ["Agitation vs air flow for the same DO", "DO setpoint margin", "Back-pressure instead of power"]
+      benchmark_fit: high
+      benchmark_fit_why: "Aerobic filamentous-fungus fed-batch in a stirred tank, oxygen-transfer limited, like penicillin"
+    sources:
+      - {title: "FDA response letter, GRN 000863 (beta-lactoglobulin from T. reesei)", url: "https://fda.gov/media/136751/download"}
+      - {title: "FoodNavigator: Perfect Day no-questions letter for non-animal whey", url: "https://www.foodnavigator.com/Article/2020/04/14/Perfect-Day-secures-no-objections-letter-from-FDA-for-non-animal-whey-protein/"}
+
+  - id: lactoferrin
+    family: precision
+    name: Lactoferrin
+    product: "Bovine lactoferrin, an iron-binding milk glycoprotein"
+    example: {company: "TurtleTree", product_name: "LF+", url: "https://www.fda.gov/media/187845/download"}
+    naming_note: null
+    organism: "Komagataella phaffii M020 (formerly Pichia pastoris; FDA GRN 1219)"
+    organism_type: yeast
+    reactor: stirred_tank
+    reactor_note: "Submerged fed-batch fermentation, per FDA GRN 1219 letter"
+    mode: fed_batch
+    product_location: secreted
+    carbon_source: "Not disclosed; glycerol, glucose or methanol typical for K. phaffii"
+    nitrogen_source: "Ammonia typical; not disclosed"
+    gases: ["air", "O2-enriched air"]
+    light: false
+    setpoints:
+      temp_c: {min: 28, max: 30, provenance: published, source: "https://assets.thermofisher.com/TFS-Assets/LSG/manuals/pichiaferm_prot.pdf (30 °C set point, avoid >32 °C; 28 °C lower bound assumed)"}
+      ph: {min: 5.0, max: 6.0, provenance: published, source: "https://assets.thermofisher.com/TFS-Assets/LSG/manuals/pichiaferm_prot.pdf"}
+      do_pct: {min: 20, max: 40, provenance: published, source: "https://assets.thermofisher.com/TFS-Assets/LSG/manuals/pichiaferm_prot.pdf (DO >20%; upper bound assumed)"}
+    phases:
+      - name: "Batch growth"
+        duration: "About 1 day (typical)"
+        goal: "Grow yeast on an initial carbon charge"
+        controls:
+          - {param: "temperature", action: "Hold about 30 °C"}
+          - {param: "dissolved oxygen", action: "Keep above 20%"}
+      - name: "Fed-batch biomass build"
+        duration: "Several hours (typical)"
+        goal: "Reach high cell density under carbon limitation"
+        controls:
+          - {param: "carbon feed", action: "Feed at a growth-limiting rate"}
+      - name: "Production (induction)"
+        duration: "2-4 days (typical)"
+        goal: "Express and secrete lactoferrin; inducer not disclosed"
+        controls:
+          - {param: "feed", action: "Feed linked to DO to avoid overfeeding"}
+          - {param: "dissolved oxygen", action: "Add O2 enrichment as demand peaks"}
+      - name: "Recovery and purification"
+        duration: "1-2 days (assumed)"
+        goal: "Remove cells and purify lactoferrin"
+        controls:
+          - {param: "separation", action: "Centrifuge, microfilter, ion-exchange, UF/DF, spray dry"}
+    control_loops:
+      - {measure: "DO probe", actuator: "Agitation, air and O2 enrichment", purpose: "Meet high oxygen demand at high density"}
+      - {measure: "DO spike response", actuator: "Feed pump", purpose: "Detect carbon depletion and avoid overfeed"}
+      - {measure: "pH probe", actuator: "Ammonia dosing", purpose: "Hold pH 5-6 and supply nitrogen"}
+      - {measure: "Temperature probe", actuator: "Jacket cooling", purpose: "Stay below 32 °C for expression"}
+    critical_risks:
+      - "Oxygen and cooling limits at very high cell density"
+      - "Methanol build-up if methanol-induced (toxic)"
+      - "Proteolysis of secreted product"
+    energy_hotspots: ["Aeration and O2 enrichment", "Cooling", "Chromatography and spray drying"]
+    kairos:
+      yield_signal: "Secreted titre and space-time yield from feed totals and at-line assays"
+      fault_signatures:
+        - "DO does not rise when feed pauses: inducer or substrate build-up"
+        - "Cooling at maximum with temperature drifting up: heat-removal limit"
+      energy_levers: ["O2 enrichment vs air flow", "Induction temperature", "Feed rate vs oxygen cost"]
+      benchmark_fit: medium
+      benchmark_fit_why: "Aerobic fed-batch with oxygen limits like penicillin, but a yeast with thin broth and a separate induction phase"
+    sources:
+      - {title: "FDA response letter, GRN 001219 (rbLf from K. phaffii M020, fed-batch, secreted)", url: "https://www.fda.gov/media/187845/download"}
+      - {title: "Thermo Fisher (Invitrogen) Pichia fermentation process guidelines", url: "https://assets.thermofisher.com/TFS-Assets/LSG/manuals/pichiaferm_prot.pdf"}
+      - {title: "Vegconomist: TurtleTree first FDA clearance for precision-fermented lactoferrin", url: "https://vegconomist.com/ingredients/turtletree-becomes-first-receive-fda-clearance-precision-fermented-lactoferrin/"}
+
+  - id: collagen
+    family: precision
+    name: Animal-free collagen
+    product: "Collagen polypeptide from chicken type XXI collagen sequence"
+    example: {company: "Geltor", product_name: "PrimaColl", url: "https://foodnavigator-usa.com/Article/2025/10/16/fda-greenlights-in-demand-vegan-collagen-from-geltor/"}
+    naming_note: null
+    organism: "Escherichia coli K-12 S9188 (FDA GRN 1171)"
+    organism_type: bacterium
+    reactor: stirred_tank
+    reactor_note: "Aerobic submerged fermentation; mode and scale not public"
+    mode: fed_batch
+    product_location: secreted
+    carbon_source: "Not disclosed; glucose or glycerol typical for E. coli"
+    nitrogen_source: "Ammonia typical; not disclosed"
+    gases: ["air", "O2-enriched air"]
+    light: false
+    setpoints:
+      temp_c: {min: 30, max: 37, provenance: assumed, source: "Typical E. coli growth and induction range; Geltor values not public"}
+      ph: {min: 6.8, max: 7.2, provenance: assumed, source: "Typical E. coli range; not public"}
+      do_pct: {min: 20, max: 30, provenance: assumed, source: "Typical E. coli fed-batch DO floor; not public"}
+    phases:
+      - name: "Seed and batch growth"
+        duration: "Hours (assumed)"
+        goal: "Grow cells on an initial sugar charge"
+        controls:
+          - {param: "dissolved oxygen", action: "Raise agitation as demand grows"}
+      - name: "Fed-batch growth"
+        duration: "About 1 day (assumed)"
+        goal: "Reach high density without acetate build-up"
+        controls:
+          - {param: "carbon feed", action: "Limit feed to avoid acetate overflow"}
+          - {param: "dissolved oxygen", action: "Cascade agitation and O2 enrichment"}
+      - name: "Induced production"
+        duration: "About 1 day (assumed)"
+        goal: "Express and secrete collagen polypeptide"
+        controls:
+          - {param: "induction", action: "Add inducer; often lower temperature"}
+      - name: "Recovery"
+        duration: "1 day (assumed)"
+        goal: "Recover secreted product from broth"
+        controls:
+          - {param: "separation", action: "Centrifuge, micro- and ultrafilter, diafilter, spray dry"}
+    control_loops:
+      - {measure: "DO probe", actuator: "Agitation and O2 enrichment", purpose: "Meet fast bacterial oxygen demand"}
+      - {measure: "DO or pH-stat signal", actuator: "Sugar feed pump", purpose: "Hold growth below acetate threshold"}
+      - {measure: "pH probe", actuator: "Ammonia dosing", purpose: "Hold neutral pH"}
+      - {measure: "Temperature probe", actuator: "Jacket cooling", purpose: "Hold growth then induction temperature"}
+    critical_risks:
+      - "Acetate accumulation reducing growth and expression"
+      - "Bacteriophage contamination"
+      - "Plasmid loss or low expression after induction"
+    energy_hotspots: ["Aeration and agitation", "Cooling", "Membrane filtration", "Spray drying"]
+    kairos:
+      yield_signal: "Secreted titre from at-line assays and feed totals"
+      fault_signatures:
+        - "Sudden DO rise with CO2 drop: lysis or phage"
+        - "pH drifting down at steady feed: acetate overflow"
+      energy_levers: ["DO setpoint margin", "O2 enrichment vs agitation power"]
+      benchmark_fit: medium
+      benchmark_fit_why: "Aerobic fed-batch with feed and oxygen control, but fast-growing bacterium and low-viscosity broth"
+    sources:
+      - {title: "FDA response letter, GRN 001171 (collagen polypeptide from E. coli K-12 S9188, secreted)", url: "https://www.fda.gov/media/186898/download"}
+      - {title: "FoodNavigator-USA: FDA no-questions letter for Geltor collagen", url: "https://foodnavigator-usa.com/Article/2025/10/16/fda-greenlights-in-demand-vegan-collagen-from-geltor/"}
+      - {title: "Johnston et al. 2002, acetate-threshold control of E. coli fed-batch", url: "https://link.springer.com/article/10.1007/s00449-002-0287-8"}
+
+  - id: bioalbumen
+    family: precision
+    name: Bioalbumen (ovalbumin)
+    product: "Ovalbumin identical to chicken egg-white protein"
+    example: {company: "Onego Bio", product_name: "Bioalbumen", url: "https://www.foodnavigator.com/Article/2025/09/24/fda-greenlights-onego-bios-bio-identical-egg-white-protein-gras-dossier/"}
+    naming_note: "The EVERY Company also makes egg-white proteins by precision fermentation, but in Komagataella phaffii (yeast), not T. reesei."
+    organism: "Trichoderma reesei TR112, from ATCC 13631 (FDA GRN 1249)"
+    organism_type: filamentous fungus
+    reactor: stirred_tank
+    reactor_note: "Aerobic submerged fermentation; mode and scale not public"
+    mode: fed_batch
+    product_location: secreted
+    carbon_source: "Sugars; exact feed not disclosed"
+    nitrogen_source: "Ammonia typical for T. reesei; not disclosed"
+    gases: ["air"]
+    light: false
+    setpoints:
+      temp_c: {min: 25, max: 28, provenance: assumed, source: "Typical T. reesei protein production; Onego values not public"}
+      ph: {min: 4.0, max: 5.0, provenance: assumed, source: "Typical T. reesei range; not public"}
+      do_pct: {min: 20, max: 30, provenance: assumed, source: "Typical T. reesei fed-batch DO floor; not public"}
+    phases:
+      - name: "Seed and batch growth"
+        duration: "1-2 days (assumed)"
+        goal: "Grow fungal mycelium on an initial sugar charge"
+        controls:
+          - {param: "dissolved oxygen", action: "Raise agitation and air as mycelium thickens"}
+      - name: "Fed-batch production"
+        duration: "3-6 days (assumed)"
+        goal: "Feed sugar slowly so the fungus secretes ovalbumin"
+        controls:
+          - {param: "carbon feed", action: "Limit sugar to avoid catabolite repression"}
+          - {param: "pH", action: "Hold low pH with ammonia dosing"}
+      - name: "Cell removal and purification"
+        duration: "1-2 days (assumed)"
+        goal: "Remove fungus and concentrate the protein"
+        controls:
+          - {param: "separation", action: "Multi-step filtration, UF/DF, sterile filtration, drying"}
+    control_loops:
+      - {measure: "DO probe", actuator: "Agitation, air flow and back-pressure", purpose: "Beat oxygen limits in viscous broth"}
+      - {measure: "pH probe", actuator: "Ammonia dosing", purpose: "Hold pH and supply nitrogen"}
+      - {measure: "Off-gas CO2 and O2", actuator: "Sugar feed pump", purpose: "Keep carbon-limited for secretion"}
+      - {measure: "Temperature probe", actuator: "Jacket cooling", purpose: "Hold production temperature"}
+    critical_risks:
+      - "Oxygen limitation as mycelial broth thickens"
+      - "Protease activity degrading product"
+      - "Foaming from a foaming protein in an aerated broth"
+    energy_hotspots: ["Agitation of viscous broth", "Aeration", "Cooling", "Filtration and drying"]
+    kairos:
+      yield_signal: "Titre and productivity from off-gas, feed and at-line protein assays"
+      fault_signatures:
+        - "Falling DO at constant feed: viscosity or oxygen-transfer limit"
+        - "Antifoam use climbing: foaming risk to sterility and yield"
+      energy_levers: ["Agitation vs air flow for the same DO", "DO setpoint margin"]
+      benchmark_fit: high
+      benchmark_fit_why: "Aerobic filamentous-fungus fed-batch in a stirred tank, oxygen-transfer limited, like penicillin"
+    sources:
+      - {title: "FDA response letter, GRN 001249 (ovalbumin from T. reesei TR112)", url: "https://www.fda.gov/media/188998/download"}
+      - {title: "FoodNavigator: FDA greenlights Onego Bio egg white protein", url: "https://www.foodnavigator.com/Article/2025/09/24/fda-greenlights-onego-bios-bio-identical-egg-white-protein-gras-dossier/"}
+      - {title: "THE EVERY Company GRAS notice cover letter (egg white protein from K. phaffii)", url: "https://fda.gov/media/170789/download"}

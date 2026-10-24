@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { ArrowRight, Dna, ExternalLink, Gauge as GaugeIcon, ShieldAlert, Sprout, TrendingUp, Zap } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { EmptyState, ErrorState, Panel, ProvenanceChip, Skeleton, Tip } from "@/components/primitives";
 import { api } from "@/lib/api/client";
@@ -38,6 +39,10 @@ const SETPOINT_LABEL: Record<string, string> = {
   h2_o2_ratio: "H₂ : O₂ ratio",
   co2_pct: "CO₂",
   pressure_bar: "Pressure",
+  biomass_g_l: "Biomass",
+  rna_reduction_temp_c: "RNA-reduction heat step",
+  rq: "Respiratory quotient",
+  productivity_g_l_h: "Productivity",
 };
 
 const UNIT: Record<string, string> = {
@@ -49,6 +54,9 @@ const UNIT: Record<string, string> = {
   light_umol_m2_s: "µmol/m²/s",
   co2_pct: "%",
   pressure_bar: "bar",
+  biomass_g_l: "g/L",
+  rna_reduction_temp_c: "°C",
+  productivity_g_l_h: "g/L/h",
 };
 
 function Chip({ children }: { children: ReactNode }) {
@@ -258,6 +266,12 @@ function HowKairosHelps({ p }: { p: ProcessDetail }) {
 export default function ProcessPage() {
   const list = useProcesses();
   const current = useSelectedProcess();
+  const [params] = useSearchParams();
+  const select = useProcessStore((s) => s.select);
+  const wanted = params.get("process");
+  useEffect(() => {
+    if (wanted) select(wanted); // deep link, e.g. /process?process=whey
+  }, [wanted, select]);
   const detail = useProcess(current?.id ?? null);
 
   if (list.isLoading || (current && detail.isLoading))

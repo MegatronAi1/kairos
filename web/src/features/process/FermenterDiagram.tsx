@@ -51,7 +51,8 @@ function rangeFor(p: ProcessDetail, probe: Probe): string | null {
 }
 
 function Badge({ x, y, probe, value, anchor = "start" }: { x: number; y: number; probe: Probe; value: string | null; anchor?: "start" | "end" }) {
-  const w = 58 + (value ? Math.min(value.length, 12) * 6.4 : 0);
+  const labelW = LABEL[probe].length * 7.8;
+  const w = 34 + labelW + (value ? Math.min(value.length, 14) * 7.4 + 8 : 0);
   const bx = anchor === "end" ? x - w : x;
   return (
     <g>
@@ -63,7 +64,7 @@ function Badge({ x, y, probe, value, anchor = "start" }: { x: number; y: number;
         {LABEL[probe]}
       </text>
       {value && (
-        <text x={bx + 23 + LABEL[probe].length * 7.6 + 6} y={y + 4} fontSize="11.5" fill="var(--color-text-secondary)" className="num">
+        <text x={bx + 23 + labelW + 6} y={y + 4} fontSize="11.5" fill="var(--color-text-secondary)" className="num">
           {value}
         </text>
       )}
@@ -114,11 +115,11 @@ const Broth = ({ d }: { d: string }) => <path d={d} fill="var(--color-accent-500
 function Controller({ x, y }: { x: number; y: number }) {
   return (
     <g>
-      <rect x={x} y={y} width={150} height={54} rx={12} fill="var(--color-accent-glow)" stroke="var(--color-accent-500)" />
-      <text x={x + 75} y={y + 23} textAnchor="middle" fontSize="13" fontWeight={700} fill="var(--color-text-primary)" className="display">
+      <rect x={x} y={y} width={180} height={54} rx={12} fill="var(--color-accent-glow)" stroke="var(--color-accent-500)" />
+      <text x={x + 90} y={y + 23} textAnchor="middle" fontSize="13" fontWeight={700} fill="var(--color-text-primary)" className="display">
         Kairos + PLC
       </text>
-      <text x={x + 75} y={y + 40} textAnchor="middle" fontSize="10.5" fill="var(--color-text-secondary)">
+      <text x={x + 90} y={y + 40} textAnchor="middle" fontSize="10.5" fill="var(--color-text-secondary)">
         reads probes · advises setpoints
       </text>
     </g>
@@ -203,7 +204,7 @@ function Airlift({ p }: { p: ProcessDetail }) {
       <Badge x={490} y={170} probe="ph" value={rangeFor(p, "ph")} />
       <Badge x={490} y={210} probe="temp" value={rangeFor(p, "temp")} />
       <Badge x={240} y={270} probe="feed" value={rangeFor(p, "feed")} anchor="end" />
-      <Controller x={540} y={392} />
+      <Controller x={560} y={392} />
     </>
   );
 }
@@ -280,9 +281,9 @@ function GasFermenter({ p }: { p: ProcessDetail }) {
       <Pipe d="M440 329 H600" />
       <Flow d="M440 329 H600" color="var(--color-chart-series3)" />
       {/* safety */}
-      <rect x={455} y={100} width={120} height={40} rx={8} fill="color-mix(in srgb, var(--color-state-alarm) 12%, transparent)" stroke="var(--color-state-alarm)" />
-      <text x={515} y={117} textAnchor="middle" fontSize="11.5" fontWeight={600} fill="var(--color-state-alarm)">H₂ / O₂ safety</text>
-      <text x={515} y={131} textAnchor="middle" fontSize="10" fill="var(--color-text-secondary)">stay outside flammable mix</text>
+      <rect x={452} y={98} width={146} height={44} rx={8} fill="color-mix(in srgb, var(--color-state-alarm) 12%, transparent)" stroke="var(--color-state-alarm)" />
+      <text x={525} y={116} textAnchor="middle" fontSize="11.5" fontWeight={600} fill="var(--color-state-alarm)">H₂ / O₂ safety</text>
+      <text x={525} y={132} textAnchor="middle" fontSize="10" fill="var(--color-text-secondary)">stay outside flammable mix</text>
       <Badge x={455} y={170} probe="gas" value={rangeFor(p, "gas")} />
       <Badge x={455} y={210} probe="do" value={rangeFor(p, "do")} />
       <Badge x={455} y={250} probe="ph" value={rangeFor(p, "ph")} />
