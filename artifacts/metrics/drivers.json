@@ -5,50 +5,50 @@
     {
       "feature": "p_now_kg",
       "label": "penicillin made so far",
-      "importance": 1120.3205195125524,
-      "share": 0.28689417800354833
-    },
-    {
-      "feature": "progress",
-      "label": "batch progress",
-      "importance": 623.2232251756336,
-      "share": 0.15959639387599417
-    },
-    {
-      "feature": "p_lab",
-      "label": "lab penicillin",
-      "importance": 430.40236984435415,
-      "share": 0.11021839907118801
+      "importance": 804.38890042398,
+      "share": 0.19322230258947107
     },
     {
       "feature": "prior_kg",
       "label": "mechanistic projection",
-      "importance": 329.64140091882075,
-      "share": 0.08441530535715908
+      "importance": 500.1530055135975,
+      "share": 0.12014178132175124
     },
     {
-      "feature": "harvested_kg",
-      "label": "penicillin harvested so far",
-      "importance": 250.0714737839035,
-      "share": 0.06403886090079335
+      "feature": "progress",
+      "label": "batch progress",
+      "importance": 416.24923867770735,
+      "share": 0.09998725281518472
+    },
+    {
+      "feature": "t_h",
+      "label": "batch time",
+      "importance": 398.356757819183,
+      "share": 0.09568929899123232
+    },
+    {
+      "feature": "feed_lph_cum",
+      "label": "cumulative sugar fed",
+      "importance": 391.42144107160277,
+      "share": 0.09402336616887681
     },
     {
       "feature": "cer_gh_cum",
       "label": "cumulative CO2 evolution",
-      "importance": 225.21852000152452,
-      "share": 0.057674461050777115
+      "importance": 288.3397149486096,
+      "share": 0.06926209899340523
     },
     {
-      "feature": "x_lab",
-      "label": "lab biomass",
-      "importance": 223.95165727542326,
-      "share": 0.0573500400175836
+      "feature": "p_lab",
+      "label": "lab penicillin",
+      "importance": 266.09630534247714,
+      "share": 0.06391900833256653
     },
     {
-      "feature": "pat_ref",
-      "label": "Raman PAT control",
-      "importance": 174.5907236927004,
-      "share": 0.04470958202448661
+      "feature": "harvested_kg",
+      "label": "penicillin harvested so far",
+      "importance": 261.93013041723003,
+      "share": 0.06291825122164361
     }
   ],
   "interactions": [
@@ -57,40 +57,40 @@
       "b": "pat_ref",
       "a_label": "mechanistic projection",
       "b_label": "Raman PAT control",
-      "strength_kg": 31.528766888532715,
-      "sentence": "High mechanistic projection lifts predicted yield more when Raman PAT control is high (interaction about 1 kg)."
+      "strength_kg": 39.651780991869295,
+      "sentence": "High mechanistic projection lifts predicted yield more when Raman PAT control is low (interaction about 9 kg)."
     },
     {
-      "a": "p_lab",
-      "b": "x_lab",
-      "a_label": "lab penicillin",
-      "b_label": "lab biomass",
-      "strength_kg": 29.212869599394356,
-      "sentence": "High lab penicillin lifts predicted yield more when lab biomass is high (interaction about 2 kg)."
+      "a": "t_h",
+      "b": "prior_kg",
+      "a_label": "batch time",
+      "b_label": "mechanistic projection",
+      "strength_kg": 30.5555827153383,
+      "sentence": "High batch time lifts predicted yield more when mechanistic projection is high (interaction about 18 kg)."
     },
     {
       "a": "x_lab",
       "b": "prior_kg",
       "a_label": "lab biomass",
       "b_label": "mechanistic projection",
-      "strength_kg": 21.483228716749007,
-      "sentence": "High lab biomass lifts predicted yield more when mechanistic projection is high (interaction about 20 kg)."
+      "strength_kg": 25.274347292707326,
+      "sentence": "High lab biomass lifts predicted yield more when mechanistic projection is high (interaction about 31 kg)."
     },
     {
-      "a": "x_lab",
-      "b": "pat_ref",
-      "a_label": "lab biomass",
-      "b_label": "Raman PAT control",
-      "strength_kg": 19.791812382298794,
-      "sentence": "High lab biomass lifts predicted yield more when Raman PAT control is high (interaction about 1 kg)."
+      "a": "t_h",
+      "b": "x_lab",
+      "a_label": "batch time",
+      "b_label": "lab biomass",
+      "strength_kg": 24.853464992003342,
+      "sentence": "High batch time lifts predicted yield more when lab biomass is low (interaction about 7 kg)."
     },
     {
       "a": "p_lab",
       "b": "pat_ref",
       "a_label": "lab penicillin",
       "b_label": "Raman PAT control",
-      "strength_kg": 18.39140906681511,
-      "sentence": "High lab penicillin lifts predicted yield more when Raman PAT control is low (interaction about 4 kg)."
+      "strength_kg": 22.892806693661658,
+      "sentence": "High lab penicillin lifts predicted yield more when Raman PAT control is low (interaction about 9 kg)."
     }
   ]
 }

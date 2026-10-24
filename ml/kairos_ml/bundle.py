@@ -50,6 +50,11 @@ class KairosModels:
     splits: dict[str, list[int]]
     onsets: dict[int, dict[str, object]]
     meta: dict[str, object] = field(default_factory=dict)
+    # Leave-one-fault-out yield models: fault batch b is always scored by a model
+    # that never saw b (the main model includes all fault batches).
+    fault_holdout_models: dict[int, YieldModel] = field(default_factory=dict)
+    # Interval half-width (kg) once a batch has alarmed, from held-out fault residuals.
+    alarm_half_width: dict[float, float] = field(default_factory=dict)
 
     def save(self, path: Path = BUNDLE_PATH) -> Path:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -63,11 +68,21 @@ class KairosModels:
             raise TypeError(f"{path} is not a KairosModels bundle")
         return obj
 
-    def score(self, b: BatchData) -> BatchScores:
-        p50, lo, hi = self.yield_model.interval(b.features, coverage=0.8)
+    def yield_model_for(self, batch_id: int) -> YieldModel:
+        return self.fault_holdout_models.get(batch_id, self.yield_model)
+
+    def score(self, b: BatchData, coverage: float = 0.8) -> BatchScores:
+        p50, lo, hi = self.yield_model_for(b.batch_id).interval(b.features, coverage=coverage)
         ratio, t2, spe = self.mspc.ratio(b.zscores.to_numpy())
         ratio = np.where(warmup_mask(b.raw["time_h"].to_numpy()), ratio, 0.0)
         smooth = self.alarm.smooth(ratio)
+        states = self.alarm.states(ratio)
+        alarmed = np.maximum.accumulate(np.array([s == "alarm" for s in states], dtype=bool))
+        if coverage in self.alarm_half_width and alarmed.any():
+            # Once a fault is flagged, the normal-batch interval is too narrow: widen it.
+            half = np.maximum((hi - lo) / 2.0, self.alarm_half_width[coverage])
+            lo = np.where(alarmed, np.clip(p50 - half, 0.0, None), lo)
+            hi = np.where(alarmed, p50 + half, hi)
         return BatchScores(
             p50=p50,
             p10=lo,
@@ -75,7 +90,7 @@ class KairosModels:
             ratio=ratio,
             ratio_smooth=smooth,
             health=health_score(sustained(smooth, self.alarm.persistence)),
-            states=self.alarm.states(ratio),
+            states=states,
             t2=t2,
             spe=spe,
         )

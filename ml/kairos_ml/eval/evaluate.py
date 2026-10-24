@@ -89,7 +89,36 @@ def yield_metrics(m: KairosModels, batches: dict[int, BatchData]) -> dict[str, A
         t = tab["target_kg"].to_numpy()
         overall[f"coverage_{int(cov * 100)}"] = float(np.mean((t >= lo) & (t <= hi)))
 
+    # Fault batches: leave-one-fault-out predictions (each scored by a model that never saw it).
+    faults = m.splits["test_fault"]
+    yf = np.array([batches[i].yield_kg for i in faults])
+    fault_scores = {i: m.score(batches[i]) for i in faults}
+    fault_cps = []
+    for p in CHECKPOINTS:
+        fpreds, los, his = [], [], []
+        for i in faults:
+            s = fault_scores[i]
+            k = int(np.argmin(np.abs(batches[i].features["progress"].to_numpy() - p)))
+            fpreds.append(s.p50[k])
+            los.append(s.p10[k])
+            his.append(s.p90[k])
+        lo_a, hi_a = np.array(los), np.array(his)
+        fault_cps.append(
+            {
+                "progress": p,
+                "kairos": _errors(np.array(fpreds), yf),
+                "naive_mean": _errors(np.full(len(yf), naive_value), yf),
+                "coverage_80": float(np.mean((yf >= lo_a) & (yf <= hi_a))),
+            }
+        )
+
     return {
+        "fault_batches": {
+            "method": "leave-one-fault-out; interval widened after the first alarm",
+            "true_yield_kg": {str(i): float(v) for i, v in zip(faults, yf, strict=True)},
+            "checkpoints": fault_cps,
+            "alarm_half_width_kg": {str(k): v for k, v in m.alarm_half_width.items()},
+        },
         "target": "total penicillin produced per batch (kg) = mid-batch harvests + final P x V",
         "unit": "kg",
         "provenance": PROVENANCE,
@@ -105,6 +134,8 @@ def yield_metrics(m: KairosModels, batches: dict[int, BatchData]) -> dict[str, A
             "Test batches were never used for training, calibration, or model selection.",
             "Conformal intervals calibrated on 15 validation batches per progress band.",
             "Only 15 test batches: treat errors as indicative, not precise.",
+            "Yield model trained on normal training batches plus fault batches; fault batches are scored leave-one-fault-out.",
+            "Alarm-state interval widths are calibrated and evaluated on the same 10 fault batches.",
         ],
     }
 
