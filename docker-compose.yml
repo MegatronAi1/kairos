@@ -19,6 +19,7 @@ services:
     volumes:
       - ./data:/app/data:ro
       - ./artifacts:/app/artifacts:ro
+      - ./var:/app/var
       - ${USERPROFILE:-~}/.aws:/aws:ro
     ports:
       - "8000:8000"

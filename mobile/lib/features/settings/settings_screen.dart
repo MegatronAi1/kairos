@@ -8,6 +8,7 @@ import 'package:kairos_pager/core/theme/kairos_theme.dart';
 import 'package:kairos_pager/core/theme/theme_pref.dart';
 import 'package:kairos_pager/core/theme/tokens.dart';
 import 'package:kairos_pager/core/ws/event_source.dart';
+import 'package:kairos_pager/features/feedback/feedback_sheet.dart';
 import 'package:kairos_pager/features/process/process_picker.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -71,6 +72,11 @@ class SettingsScreen extends ConsumerWidget {
               );
             },
             child: const Text('Send test alarm'),
+          ),
+          const SizedBox(height: KSpace.s3),
+          OutlinedButton(
+            onPressed: () => showFeedbackSheet(context, page: 'settings'),
+            child: const Text('Send feedback'),
           ),
           const SizedBox(height: KSpace.s3),
           OutlinedButton(

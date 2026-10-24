@@ -5,6 +5,7 @@ import 'package:kairos_pager/core/models/models.dart';
 import 'package:kairos_pager/core/providers.dart';
 import 'package:kairos_pager/core/theme/kairos_theme.dart';
 import 'package:kairos_pager/core/theme/tokens.dart';
+import 'package:kairos_pager/features/feedback/feedback_sheet.dart';
 import 'package:kairos_pager/widgets/chips.dart';
 import 'package:kairos_pager/widgets/energy_donut.dart';
 import 'package:kairos_pager/widgets/event_strip.dart';
@@ -54,6 +55,11 @@ class ReactorDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text('${r.id} · batch ${r.batchId}', style: KText.display(KSize.xl)),
         actions: [
+          IconButton(
+            tooltip: 'Feedback',
+            icon: const Icon(LucideIcons.messageSquare, size: 20),
+            onPressed: () => showFeedbackSheet(context, page: 'reactor', reactorId: r.id),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: KSpace.s4),
             child: Center(child: StatusPill(state: r.state)),

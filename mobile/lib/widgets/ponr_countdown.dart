@@ -38,7 +38,10 @@ class PonrCountdown extends StatelessWidget {
                     remainingH > 0 ? fmtHours(remainingH) : 'Passed',
                     style: KText.mono(size > 140 ? KSize.hero * 0.75 : KSize.x2xl, weight: FontWeight.w600),
                   ),
-                  Text(remainingH > 0 ? 'to point of no return' : 'act now to limit the loss', style: KText.ui(KSize.xs, color: KColors.textSecondary)),
+                  Text(
+                    remainingH > 0 ? 'to point of no return' : 'act now to limit the loss',
+                    style: KText.ui(KSize.xs, color: KColors.textSecondary),
+                  ),
                   Text('model estimate', style: KText.ui(KSize.xs - 1, color: KColors.textMuted)),
                 ],
               ),

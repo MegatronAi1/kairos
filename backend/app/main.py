@@ -17,6 +17,9 @@ from app.agent.tools import ToolBox
 from app.api import (
     routes_agent,
     routes_batches,
+    routes_demo,
+    routes_feedback,
+    routes_impact,
     routes_meta,
     routes_metrics,
     routes_plants,
@@ -68,6 +71,7 @@ def build_state(settings: Settings, engines: Engines | None = None) -> AppState:
     )
     tenant = get_tenant(settings.scenario)
     engine.load_tenant(tenant, settings.default_speed_h_per_s)
+    engine.loop, engine.turnaround_s = settings.replay_loop, settings.turnaround_s
 
     state = AppState(settings=settings, store=store, bus=bus, engine=engine, tenant=tenant)
     state.agent = build_agent(settings, state)
@@ -139,6 +143,9 @@ def create_app(settings: Settings | None = None, *, autostart: bool = True) -> F
         routes_metrics,
         routes_processes,
         routes_plants,
+        routes_feedback,
+        routes_demo,
+        routes_impact,
     ):
         app.include_router(module.router, prefix=API_PREFIX)
     app.include_router(routes_plants.auth_router, prefix=API_PREFIX)

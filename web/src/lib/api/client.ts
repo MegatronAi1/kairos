@@ -45,6 +45,18 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (await res.json()) as T;
 }
 
+export type FaultKind = "oxygen" | "feed" | "temperature";
+
+export interface FeedbackIn {
+  category: "bug" | "idea" | "data" | "other";
+  rating: number | null;
+  message: string;
+  source: "web";
+  reactor_id: string | null;
+  page: string;
+  user: string | null;
+}
+
 export const api = {
   reactors: () => request<ReactorSummary[]>("/reactors"),
   events: (id: string) => request<AlarmEvent[]>(`/reactors/${id}/events`),
@@ -55,6 +67,13 @@ export const api = {
     }),
   ack: (id: string) =>
     request<AckEvent>(`/reactors/${id}/ack`, { method: "POST", body: JSON.stringify({ by: "control room" }) }),
+  feedback: (body: FeedbackIn) =>
+    request<{ id: string; received_at: number }>("/feedback", { method: "POST", body: JSON.stringify(body) }),
+  triggerFault: (reactorId: string, kind: FaultKind) =>
+    request<{ fault_batch: number; description: string; expected_alarm_in_s: number }>("/demo/trigger-fault", {
+      method: "POST",
+      body: JSON.stringify({ reactor_id: reactorId, kind }),
+    }),
   trajectory: (batch: number, keys: string[], untilH?: number, every = 5) => {
     const q = new URLSearchParams({ every: String(every) });
     keys.forEach((k) => q.append("keys", k));
@@ -80,6 +99,8 @@ export const api = {
       { method: "POST", body: JSON.stringify({ email, password }) },
     ),
   agentStatus: () => request<{ enabled: boolean; model_chat: string | null }>("/agent/status"),
+  impact: (period: ImpactPeriod, plant = "all") =>
+    request<Impact>(`/impact?${new URLSearchParams({ period, plant })}`),
 };
 
 /** Streams the copilot's answer (server-sent events over a POST). */
@@ -228,4 +249,73 @@ export interface PlantRollup {
   power_kw: number;
   energy_kwh: number;
   forecast_vs_typical_pct: number | null;
+}
+
+export type ImpactPeriod = "month" | "quarter" | "year";
+
+export interface ImpactRow {
+  period: string;
+  batches: number;
+  failed_before_baseline: number;
+  failed_actual: number;
+  batches_rescued: number;
+  energy_kwh_baseline: number;
+  energy_kwh_actual: number;
+  energy_saved_kwh: number;
+  co2_saved_kg: number;
+  feedstock_saved_kg: number;
+  money_saved_inr: number;
+  money_saved_usd: number;
+  breakdown_inr: { rescued_batches: number; energy: number; feedstock: number };
+}
+
+export interface ImpactAssumption {
+  key: string;
+  label: string;
+  value: number | string;
+  unit: string;
+  provenance: "measured" | "assumed" | "simulated";
+}
+
+export interface Impact {
+  tenant: string;
+  period: ImpactPeriod;
+  plant: string;
+  kairos_live_from: string;
+  months: [string, string];
+  provenance: {
+    simulated: string;
+    measured_rates: { detection_rate: number; energy_saving_pct: number; source: string };
+    assumptions: ImpactAssumption[];
+  };
+  series: ImpactRow[];
+  totals: ImpactRow;
+  baseline_year: ImpactRow;
+  by_plant: {
+    plant_id: string;
+    name: string;
+    city: string;
+    money_saved_inr: number;
+    money_saved_usd: number;
+    energy_saved_kwh: number;
+    feedstock_saved_kg: number;
+    batches_rescued: number;
+  }[];
+}
+
+/** Downloads an impact export (xlsx | pdf) with the session token. */
+export async function downloadImpact(ext: "xlsx" | "pdf", period: ImpactPeriod, plant: string): Promise<void> {
+  const res = await fetch(apiUrl(`/impact/export.${ext}?${new URLSearchParams({ period, plant })}`), {
+    headers: authToken() ? { Authorization: `Bearer ${authToken()}` } : {},
+  });
+  if (!res.ok) throw new ApiError(res.status, `${res.status} ${res.statusText}`);
+  const name = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") ?? "")?.[1] ?? `kairos-impact.${ext}`;
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

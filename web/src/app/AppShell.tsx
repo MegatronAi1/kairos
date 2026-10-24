@@ -1,9 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { Activity, BookOpen, ChevronRight, Factory, FlaskConical, LogOut, Map, Menu, Monitor, Moon, Sun, X } from "lucide-react";
+import { Activity, BookOpen, Building2, ChevronRight, Factory, FlaskConical, LogOut, Map, Menu, Monitor, Moon, Sun, TrendingUp, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation, useMatch } from "react-router-dom";
 
+import { AlarmToaster } from "@/components/AlarmToaster";
+import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { ProcessSelector } from "@/components/ProcessSelector";
+import { SimulateAlarm } from "@/components/SimulateAlarm";
 import { Tip } from "@/components/primitives";
 import { api } from "@/lib/api/client";
 import { stateVar } from "@/lib/format";
@@ -92,13 +95,12 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           <Brand />
         </Link>
       </div>
-      <div className="mx-3 mb-3 rounded-control border border-border-subtle px-3 py-2">
-        <div className="text-[11px] text-text-muted">Organisation</div>
-        <div className="truncate text-sm font-medium">{session.tenant.name}</div>
-      </div>
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3" aria-label="Main">
         <NavItem to="/app" end icon={<Map size={16} />}>
           Operations map
+        </NavItem>
+        <NavItem to="/app/impact" icon={<TrendingUp size={16} />}>
+          Impact and savings
         </NavItem>
         <div className="px-3 pb-1 pt-4 text-[11px] font-medium text-text-muted">Plants</div>
         {(plants.data ?? []).map((p) => (
@@ -123,6 +125,9 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </NavItem>
       </nav>
       <div className="border-t border-border-subtle p-3">
+        <div className="mb-2" onClick={(e) => e.stopPropagation()}>
+          <FeedbackDialog />
+        </div>
         <div className="flex items-center gap-3">
           <span
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
@@ -155,17 +160,25 @@ function Breadcrumbs() {
   const plants = useQuery({ queryKey: ["plants"], queryFn: api.plants, enabled: !!plantMatch });
   const plant = plants.data?.find((p) => p.id === plantMatch?.params.plantId);
   const reactor = loc.pathname.match(/\/reactors\/([^/]+)/)?.[1];
-  const crumbs: { label: string; to?: string }[] = [{ label: "Operations", to: "/app" }];
+  const tenant = useSession((s) => s.session?.tenant.name) ?? "Operations";
+  const crumbs: { label: string; to?: string; org?: boolean }[] = [{ label: tenant, to: "/app", org: true }];
   if (plantMatch) crumbs.push({ label: plant?.name ?? "Plant", to: reactor ? `/app/plants/${plantMatch.params.plantId}` : undefined });
   if (reactor) crumbs.push({ label: decodeURIComponent(reactor) });
-  const section = { process: "Process library", evidence: "Model evidence", method: "How it works" }[loc.pathname.split("/")[2] ?? ""];
+  const section = { process: "Process library", evidence: "Model evidence", method: "How it works", impact: "Impact" }[loc.pathname.split("/")[2] ?? ""];
   if (section) crumbs.push({ label: section });
   return (
     <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-sm">
       {crumbs.map((c, i) => (
         <span key={c.label} className="flex min-w-0 items-center gap-1">
           {i > 0 && <ChevronRight size={14} className="shrink-0 text-text-muted" />}
-          {c.to && i < crumbs.length - 1 ? (
+          {c.org ? (
+            <Link to="/app" className={`flex min-w-0 items-center gap-2 ${crumbs.length > 1 ? "text-text-secondary hover:text-text-primary" : "font-semibold"}`}>
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-border-subtle bg-bg-elevated">
+                <Building2 size={13} />
+              </span>
+              <span className={`truncate ${crumbs.length > 1 ? "hidden sm:inline" : "display"}`}>{c.label}</span>
+            </Link>
+          ) : c.to && i < crumbs.length - 1 ? (
             <Link to={c.to} className="truncate text-text-secondary hover:text-text-primary">
               {c.label}
             </Link>
@@ -213,10 +226,12 @@ export function AppShell() {
                 <FlaskConical size={13} /> Benchmark data
               </span>
             </Tip>
+            <SimulateAlarm />
             <ConnectionIndicator />
             <ThemeToggle />
           </div>
         </header>
+        <AlarmToaster />
         <main className="min-h-0 flex-1">
           <Outlet />
         </main>

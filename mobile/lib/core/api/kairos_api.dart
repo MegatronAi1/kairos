@@ -19,6 +19,12 @@ class KairosApi {
   final Pairing pairing;
   final Dio _dio;
 
+  /// Send operator feedback to the Kairos team (stored server-side).
+  Future<void> sendFeedback(FeedbackPayload f) async {
+    if (pairing.demo) return;
+    await _dio.post<void>('feedback', data: f.toJson());
+  }
+
   Future<bool> ping() async {
     if (pairing.demo) return true;
     final res = await _dio.get<Map<String, dynamic>>('healthz');
@@ -108,4 +114,29 @@ class KairosApi {
     if (pairing.demo) return;
     await _dio.post<void>('reactors/$reactorId/ack', data: {'by': by});
   }
+}
+
+class FeedbackPayload {
+  const FeedbackPayload({
+    required this.category,
+    required this.rating,
+    required this.message,
+    required this.page,
+    this.reactorId,
+  });
+
+  final String category;
+  final int rating;
+  final String message;
+  final String page;
+  final String? reactorId;
+
+  Map<String, dynamic> toJson() => {
+    'category': category,
+    'rating': rating,
+    'message': message,
+    'source': 'pager',
+    'reactor_id': reactorId,
+    'page': page,
+  };
 }

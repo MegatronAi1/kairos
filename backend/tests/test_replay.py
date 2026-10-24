@@ -83,3 +83,23 @@ def test_template_recognises_oxygen_pattern() -> None:
         )
     )
     assert card.title == "Oxygen transfer dropping"
+
+
+async def test_loop_restarts_finished_batch(state: AppState) -> None:
+    r = state.engine.reactors["R1"]
+    while r.running:
+        await state.engine.step(r, 5.0)
+    assert r.ended_at is not None
+    await state.engine.next_batch(r)
+    assert r.running and r.t_h == 0.0 and r.cycle == 1 and r.ended_at is None
+
+
+async def test_simulated_fault_alarms_then_returns_home(state: AppState) -> None:
+    r = state.engine.reactors["R1"]
+    await state.engine.simulate_fault("R1", 91, 20.0)
+    assert r.batch.batch_id == 91 and r.t_h == 18.0
+    for _ in range(12):
+        await state.engine.step(r, 0.5)
+    assert r.state == "alarm"
+    await state.engine.next_batch(r)
+    assert r.batch.batch_id == 1 and r.state == "normal"

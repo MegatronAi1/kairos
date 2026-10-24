@@ -11,6 +11,7 @@ import { AppShell } from "./AppShell";
 const LandingPage = lazy(() => import("@/features/landing/LandingPage"));
 const LoginPage = lazy(() => import("@/features/auth/LoginPage"));
 const OverviewPage = lazy(() => import("@/features/overview/OverviewPage"));
+const ImpactPage = lazy(() => import("@/features/impact/ImpactPage"));
 const PlantPage = lazy(() => import("@/features/plant/PlantPage"));
 const ReactorPage = lazy(() => import("@/features/reactor/ReactorPage"));
 const EvidencePage = lazy(() => import("@/features/evidence/EvidencePage"));
@@ -44,6 +45,7 @@ export function App() {
                   <Route path="plants/:plantId/reactors/:id" element={<ReactorPage />} />
                   <Route path="process" element={<ProcessPage />} />
                   <Route path="evidence" element={<EvidencePage />} />
+                  <Route path="impact" element={<ImpactPage />} />
                   <Route path="method" element={<MethodPage />} />
                 </Route>
                 <Route path="/reactor/:id" element={<LegacyReactor />} />

@@ -9,6 +9,12 @@ import 'package:kairos_pager/core/theme/tokens.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 /// Sign in to the company's Kairos server. Demo accounts are offered by the server.
+/// The live Kairos deployment (CloudFront, HTTPS/WSS).
+const kLiveServer = 'https://dppjlgz96ztew.cloudfront.net';
+
+/// The laptop over a USB port forward (`adb reverse tcp:8000 tcp:8000`).
+const kLocalServer = 'http://localhost:8000';
+
 class PairScreen extends ConsumerStatefulWidget {
   const PairScreen({super.key});
 
@@ -17,7 +23,7 @@ class PairScreen extends ConsumerStatefulWidget {
 }
 
 class _PairScreenState extends ConsumerState<PairScreen> {
-  final _url = TextEditingController(text: 'http://localhost:8000');
+  final _url = TextEditingController(text: kLiveServer);
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _busy = false;
@@ -183,9 +189,24 @@ class _PairScreenState extends ConsumerState<PairScreen> {
                     style: KText.mono(KSize.md),
                     decoration: const InputDecoration(
                       labelText: 'Server address',
-                      hintText: 'http://192.168.1.20:8000',
+                      hintText: 'https://your-kairos-server',
                     ),
                   ),
+                  const SizedBox(height: KSpace.s2),
+                  Wrap(
+                    spacing: KSpace.s2,
+                    children: [
+                      ActionChip(
+                        label: const Text('Live server'),
+                        onPressed: () => setState(() => _url.text = kLiveServer),
+                      ),
+                      ActionChip(
+                        label: const Text('Use local laptop (http://localhost:8000)'),
+                        onPressed: () => setState(() => _url.text = kLocalServer),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: KSpace.s2),
                 ],
               ),
             ),

@@ -72,6 +72,8 @@ def state() -> AppState:
 def client(state: AppState) -> Iterator[TestClient]:
     from app.api import (
         routes_batches,
+        routes_demo,
+        routes_feedback,
         routes_meta,
         routes_metrics,
         routes_plants,
@@ -89,6 +91,8 @@ def client(state: AppState) -> Iterator[TestClient]:
         routes_metrics,
         routes_processes,
         routes_plants,
+        routes_feedback,
+        routes_demo,
     ):
         app.include_router(module.router, prefix=API_PREFIX)
     app.include_router(routes_plants.auth_router, prefix=API_PREFIX)

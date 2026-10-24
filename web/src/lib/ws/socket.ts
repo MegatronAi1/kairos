@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { api, wsUrl } from "@/lib/api/client";
 import type { KEvent, SnapshotMessage } from "@/lib/api/types";
 import { useLive } from "@/lib/store/live";
+import { useToasts } from "@/lib/store/toasts";
 
 /** One app-wide WebSocket with exponential-backoff reconnect. */
 export function useLiveSocket(): void {
@@ -32,11 +33,29 @@ export function useLiveSocket(): void {
           for (const r of data.reactors) {
             void api
               .events(r.id)
-              .then((alarms) => useLive.getState().patch(r.id, { alarms }))
+              .then((alarms) => {
+                useLive.getState().patch(r.id, { alarms });
+                // Open, unacknowledged alarms are shown again (quietly) after a reload.
+                const last = [...alarms].reverse().find((a) => a.state === "alarm");
+                if (r.state === "alarm" && !r.acknowledged && last)
+                  useToasts.getState().push(last, r.plant_id, r.last_insight?.card ?? null, false);
+              })
               .catch(() => undefined);
           }
         }
-        else if (data.type !== "pong") applyEvent(data);
+        else if (data.type !== "pong") {
+          const prev = data.type === "tick" ? useLive.getState().reactors[data.reactor_id]?.tick : null;
+          applyEvent(data);
+          const toasts = useToasts.getState();
+          // A new batch (loop, restart, simulated fault) clears that reactor's old toast.
+          if (data.type === "tick" && prev && (data.t_h < prev.t_h || data.batch_id !== prev.batch_id))
+            toasts.dismissReactor(data.reactor_id);
+          if (data.type === "alarm" && data.state === "alarm")
+            toasts.push(data, useLive.getState().reactors[data.reactor_id]?.plantId ?? "");
+          else if (data.type === "alarm" && data.state === "normal") toasts.dismissReactor(data.reactor_id);
+          else if (data.type === "insight") toasts.attachCard(data.reactor_id, data.card);
+          else if (data.type === "ack") toasts.dismissReactor(data.reactor_id);
+        }
       };
       ws.onclose = () => {
         clearInterval(ping);

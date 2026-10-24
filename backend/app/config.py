@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"  # comma-separated
     artifacts_dir: Path = Path("artifacts")
     data_dir: Path = Path("data")
+    var_dir: Path = Path("var")  # writable runtime data (feedback)
     scenario: str = "investor_demo"
 
     aws_region: str = Field("us-east-1", validation_alias="AWS_REGION")
@@ -33,6 +34,8 @@ class Settings(BaseSettings):
 
     tick_hz: float = 2.0
     default_speed_h_per_s: float = 1.0
+    replay_loop: bool = True  # restart finished batches (live demo); tests turn it off
+    turnaround_s: float = 8.0
     local_shap_every_n_ticks: int = 10
 
     @property

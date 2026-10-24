@@ -43,6 +43,9 @@ class Reactor:
     last_tick: TickEvent | None = None
     last_insight: InsightEvent | None = None
     history: list[AlarmEvent] = field(default_factory=list)
+    home_batch: Batch | None = None  # the scenario's batch; a simulated fault swaps it out
+    ended_at: float | None = None  # monotonic time the batch ended (for looping)
+    cycle: int = 0  # completed batches since start
 
     def summary(self) -> ReactorSummary:
         return ReactorSummary(
@@ -70,6 +73,7 @@ class Reactor:
         self.last_tick = None
         self.last_insight = None
         self.history.clear()
+        self.ended_at = None
 
 
 class ReplayEngine:
@@ -86,12 +90,17 @@ class ReplayEngine:
         self.tick_hz = tick_hz
         self.reactors: dict[str, Reactor] = {}
         self.on_transition: InsightHook | None = None
+        # Loop finished batches after a short turnaround (harvest, clean, re-inoculate),
+        # so a hosted demo keeps producing fresh batches and alarms.
+        self.loop = True
+        self.turnaround_s = 8.0
         self._task: asyncio.Task[None] | None = None
 
     # --- lifecycle -----------------------------------------------------------
     def load_scenario(self, slots: dict[str, int], speed_h_per_s: float) -> None:
         self.reactors = {
-            rid: Reactor(rid, self.store.get(bid), speed_h_per_s) for rid, bid in slots.items()
+            rid: Reactor(rid, b, speed_h_per_s, home_batch=b)
+            for rid, b in ((rid, self.store.get(bid)) for rid, bid in slots.items())
         }
 
     def load_tenant(self, tenant: Tenant, speed_h_per_s: float) -> None:
@@ -101,7 +110,9 @@ class ReplayEngine:
                 rid = plant.reactor_id(short)
                 batch = self.store.get(bid)
                 t0 = min(plant.start_h, batch.t_end_h * 0.9)
-                self.reactors[rid] = Reactor(rid, batch, speed_h_per_s, plant.id, t0, t_h=t0)
+                self.reactors[rid] = Reactor(
+                    rid, batch, speed_h_per_s, plant.id, t0, t_h=t0, home_batch=batch
+                )
 
     def start(self) -> None:
         if self._task is None:
@@ -118,12 +129,19 @@ class ReplayEngine:
         period = 1.0 / self.tick_hz
         while True:
             started = time.perf_counter()
+            now = time.monotonic()
             for reactor in list(self.reactors.values()):
-                if reactor.running:
-                    try:
+                try:
+                    if reactor.running:
                         await self.step(reactor, reactor.speed_h_per_s * period)
-                    except Exception:  # one bad reactor must not stop the others
-                        log.exception("replay_step_failed", reactor=reactor.id)
+                    elif (
+                        self.loop
+                        and reactor.ended_at is not None
+                        and now - reactor.ended_at >= self.turnaround_s
+                    ):
+                        await self.next_batch(reactor)
+                except Exception:  # one bad reactor must not stop the others
+                    log.exception("replay_step_failed", reactor=reactor.id)
             elapsed = time.perf_counter() - started
             await asyncio.sleep(max(0.0, period - elapsed))
 
@@ -132,7 +150,33 @@ class ReplayEngine:
         reactor.t_h = min(reactor.t_h + dt_h, reactor.batch.t_end_h)
         if reactor.t_h >= reactor.batch.t_end_h:
             reactor.running = False
+            reactor.ended_at = time.monotonic()
         return await self.emit(reactor)
+
+    async def next_batch(self, reactor: Reactor) -> None:
+        """Start the reactor's next batch: its scenario batch again, from 0 h."""
+        if reactor.home_batch is not None:
+            reactor.batch = reactor.home_batch
+        reactor.cycle += 1
+        reactor.t_h = 0.0
+        reactor.running = True
+        reactor.reset_state()
+        await self.emit(reactor)
+        log.info(
+            "batch_started", reactor=reactor.id, batch=reactor.batch.batch_id, cycle=reactor.cycle
+        )
+
+    async def simulate_fault(self, reactor_id: str, batch_id: int, onset_h: float) -> Reactor:
+        """Demo: replay a fault batch on this reactor from shortly before the fault
+        starts, so the real detector raises the alarm a few seconds later. The
+        reactor returns to its own batch when this one ends."""
+        r = self.reactors[reactor_id]
+        r.batch = self.store.get(batch_id)
+        r.t_h = max(0.0, onset_h - 2.0)
+        r.running = True
+        r.reset_state()
+        await self.emit(r)
+        return r
 
     async def emit(self, reactor: Reactor) -> TickEvent:
         idx = reactor.batch.index_at(reactor.t_h)

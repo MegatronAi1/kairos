@@ -32,11 +32,13 @@ export function Chat({ reactorId, suggestions }: { reactorId?: string; suggestio
   const [busy, setBusy] = useState(false);
   const [activity, setActivity] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
-  const end = useRef<HTMLDivElement>(null);
+  const list = useRef<HTMLDivElement>(null);
   const process = useSelectedProcess();
 
+  // Scroll only the message list (scrollIntoView would also scroll the page).
   useEffect(() => {
-    end.current?.scrollIntoView?.({ block: "end" });
+    const el = list.current;
+    if (el && messages.length) el.scrollTop = el.scrollHeight;
   }, [messages, activity]);
   useEffect(() => {
     return () => {
@@ -75,7 +77,7 @@ export function Chat({ reactorId, suggestions }: { reactorId?: string; suggestio
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1" aria-live="polite">
+      <div ref={list} className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1" aria-live="polite">
         {messages.length === 0 && (
           <div className="space-y-2">
             <p className="text-sm text-text-muted">Ask about drift, drivers, forecasts or model accuracy.</p>
@@ -118,7 +120,6 @@ export function Chat({ reactorId, suggestions }: { reactorId?: string; suggestio
             <Loader2 size={14} className="animate-spin" aria-hidden /> Kairos is {activity}…
           </div>
         )}
-        <div ref={end} />
       </div>
       <form
         className="mt-3 flex gap-2"

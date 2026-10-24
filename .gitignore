@@ -43,3 +43,6 @@ Thumbs.db
 !.vscode/extensions.json
 web/.vite/
 infra/.deploy-state.json
+
+# runtime data (feedback)
+/var/

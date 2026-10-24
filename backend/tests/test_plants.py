@@ -82,6 +82,9 @@ def test_demo_tenant_is_fictional_and_uses_held_out_batches() -> None:
     splits = json.loads(
         (Path(__file__).resolve().parents[2] / "ml" / "config" / "splits.json").read_text()
     )
-    held_out = set(splits["test_normal"]) | set(splits["test_fault"])
+    # Never a training batch; validation batches are used only for selection/calibration.
+    held_out = set(splits["test_normal"]) | set(splits["test_fault"]) | set(splits["val"])
+    known_false_alarms = {27, 45, 68}
     for plant in DEMO_TENANT.plants:
         assert set(plant.slots.values()) <= held_out, plant.id
+        assert not set(plant.slots.values()) & known_false_alarms, plant.id
