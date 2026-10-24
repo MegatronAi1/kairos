@@ -1,31 +1,75 @@
-import { ArrowLeft, CheckCircle2, Gauge as GaugeIcon, Layers, RotateCcw, Sparkles, TrendingUp, Zap } from "lucide-react";
-import { useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowLeft, CheckCircle2, ChevronUp, Sparkles } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { Chat } from "@/components/Chat";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { FloatingPanel } from "@/components/FloatingPanel";
 import { EmptyState, ProvenanceChip, Skeleton, StatusPill } from "@/components/primitives";
-import { InsightCardView, PonrCountdown } from "@/components/readouts";
+import { InsightCardView, PonrCountdown, Sparkline } from "@/components/readouts";
 import { TimelineScrubber } from "@/components/Timeline";
 import { EnergyPanel, ForecastFan, Gauge, HealthRing } from "@/components/viz";
 import { api } from "@/lib/api/client";
 import { fmt, fmtInt, stateVar, strategyLabel, valueOf } from "@/lib/format";
 import { statusSentence } from "@/lib/narrate";
+import { useProcessStore } from "@/lib/process";
 import { useLive } from "@/lib/store/live";
-import { useMedia } from "@/lib/useMedia";
 import { ReactorScene } from "@/three/Stage";
 
-type LayerId = "vitals" | "forecast" | "energy";
-const LAYERS: { id: LayerId; label: string }[] = [
-  { id: "vitals", label: "Process gauges" },
-  { id: "forecast", label: "Yield forecast" },
-  { id: "energy", label: "Energy" },
-];
+type Detail = "process" | "forecast" | "energy";
 
-function Quick({ label, value }: { label: string; value: string }) {
+/** A live summary tile in the instrument dock; clicking it opens the matching detail view. */
+function DockTile({
+  label,
+  value,
+  unit,
+  note,
+  tone,
+  history,
+  active,
+  onClick,
+}: {
+  label: string;
+  value: string;
+  unit?: string;
+  note: string;
+  tone?: string;
+  history: number[];
+  active: boolean;
+  onClick: () => void;
+}) {
   return (
-    <div className="rounded-control bg-bg-inset px-2.5 py-1.5">
+    <button
+      onClick={onClick}
+      aria-pressed={active}
+      className="group flex min-w-0 flex-col rounded-card border p-3 text-left transition-colors hover:border-border-strong"
+      style={{
+        borderColor: active ? "var(--color-accent-500)" : undefined,
+        background: active ? "color-mix(in srgb, var(--color-accent-500) 7%, var(--color-bg-surface))" : "var(--color-bg-surface)",
+      }}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="truncate text-xs font-medium text-text-secondary">{label}</span>
+        <ChevronUp size={14} className={`shrink-0 text-text-muted transition-transform ${active ? "" : "rotate-180"}`} aria-hidden />
+      </div>
+      <div className="mt-1 flex items-end justify-between gap-2">
+        <div className="min-w-0 whitespace-nowrap">
+          <span className="display-num text-2xl font-semibold" style={{ color: tone }}>
+            {value}
+          </span>
+          {unit && <span className="ml-1 text-xs text-text-muted">{unit}</span>}
+        </div>
+        <Sparkline values={history} color={tone ?? "var(--color-accent-500)"} width={64} height={24} />
+      </div>
+      <span className="mt-1 truncate text-[11px] text-text-muted">{note}</span>
+    </button>
+  );
+}
+
+function Quick({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="rounded-control bg-bg-inset px-3 py-2">
       <div className="text-[11px] text-text-muted">{label}</div>
       <div className="display-num text-sm font-semibold">{value}</div>
     </div>
@@ -37,13 +81,14 @@ export default function ReactorPage() {
   const r = useLive((s) => s.reactors[id]);
   const status = useLive((s) => s.status);
   const patch = useLive((s) => s.patch);
-  const stage = useRef<HTMLDivElement>(null);
-  const floating = useMedia("(min-width: 1280px)");
-  // On very wide screens every panel opens; otherwise secondary panels start collapsed so the reactor stays visible.
-  const roomy = useMedia("(min-width: 1760px)");
-  const [layers, setLayers] = useState<Record<LayerId, boolean>>({ vitals: true, forecast: true, energy: true });
-  const [resetKey, setResetKey] = useState(0);
-  const [menu, setMenu] = useState(false);
+  const [detail, setDetail] = useState<Detail | null>(null);
+  const detailRef = useRef<HTMLDivElement>(null);
+  const plants = useQuery({ queryKey: ["plants"], queryFn: api.plants });
+  const selectProcess = useProcessStore((s) => s.select);
+  const plantProcess = plants.data?.find((p) => p.id === (plantId || r?.plantId))?.process_id;
+  useEffect(() => {
+    if (plantProcess) selectProcess(plantProcess); // deep links keep the right process context
+  }, [plantProcess, selectProcess]);
 
   if (!r) {
     return status === "live" ? (
@@ -62,196 +107,209 @@ export default function ReactorPage() {
   const ponrLeft = ponr !== null && tick && lastAlarm ? Math.max(0, ponr - (tick.t_h - lastAlarm.t_h)) : null;
   const hist = (k: string) => r.history.slice(-90).map((t) => valueOf(t, k) ?? NaN);
   const contributors = [...(h?.top_contributors.map((c) => c.var) ?? []), ...(lastAlarm?.contributors.map((c) => c.var) ?? [])];
+  const hot = (k: string) => (r.state !== "normal" && contributors.includes(k) ? stateVar[r.state] : undefined);
   const oxygenAlarm = r.state !== "normal" && contributors.some((c) => ["do_pct", "o2_offgas_pct", "co2_offgas_pct", "our", "cer"].includes(c));
-  const show = (l: LayerId) => !floating || layers[l];
-  const hide = (l: LayerId) => () => setLayers((s) => ({ ...s, [l]: false }));
+  const doPct = valueOf(tick, "do_pct");
 
-  const statusCard = (
-    <div className={floating ? "glass absolute left-4 top-4 z-10 w-[330px] rounded-card p-4" : "rounded-card border border-border-subtle bg-bg-surface p-4"}>
-      <div className="flex items-center gap-3">
-        <Link to={`/app/plants/${plantId || r.plantId}`} aria-label="Back to plant" className="rounded-control p-1 text-text-secondary hover:bg-bg-elevated hover:text-text-primary">
-          <ArrowLeft size={18} />
-        </Link>
-        <HealthRing score={h?.score ?? null} state={h?.state ?? r.state} size={52} />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h1 className="display-num text-2xl font-semibold tracking-tight">{r.id}</h1>
-            <StatusPill state={r.state} compact />
-          </div>
-          <div className="truncate text-xs text-text-muted">
-            Batch {r.batchId} · {strategyLabel(r.strategy)} · {fmt(tick?.t_h, 1)} h
-          </div>
-        </div>
-      </div>
-      <p className="mt-3 text-sm leading-snug">
-        <span className="font-semibold" style={{ color: r.state === "normal" ? undefined : stateVar[r.state] }}>
-          {story.headline}.
-        </span>{" "}
-        <span className="text-text-secondary">{story.detail}</span>
-      </p>
-      {r.state === "alarm" && h && h.state !== "alarm" && (
-        <p className="mt-2 text-xs text-text-muted">Detector reads {h.state} now; the alarm stays latched until acknowledged.</p>
-      )}
-      {r.state === "alarm" && !r.acknowledged ? (
-        <button
-          onClick={() => {
-            patch(r.id, { acknowledged: true });
-            void api.ack(r.id);
-          }}
-          className="mt-3 w-full rounded-control py-2 text-sm font-semibold text-white"
-          style={{ background: "var(--color-state-alarm)" }}
-        >
-          Acknowledge alarm
-        </button>
-      ) : r.acknowledged && r.state !== "normal" ? (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-text-secondary">
-          <CheckCircle2 size={14} /> Acknowledged by operator
-        </p>
-      ) : null}
-    </div>
-  );
-
-  const panels = (
-    <>
-      {show("vitals") && (
-        <FloatingPanel
-          title="Process gauges"
-          icon={<GaugeIcon size={15} />}
-          position={{ left: 16, top: 250 }}
-          bounds={stage}
-          floating={floating}
-          width={280}
-          onClose={hide("vitals")}
-          resetKey={resetKey}
-          defaultOpen={!floating || roomy}
-        >
-          <div className="grid grid-cols-2 gap-x-1 gap-y-2">
-            <Gauge label="Dissolved oxygen" unit="% sat" value={valueOf(tick, "do_pct")} min={0} max={120} band={[45, 110]} warnBelow={25} history={hist("do_pct")} />
-            <Gauge label="pH" unit="" value={valueOf(tick, "ph")} min={5.8} max={7.2} band={[6.3, 6.7]} decimals={2} history={hist("ph")} />
-            <Gauge label="Temperature" unit="°C" value={valueOf(tick, "temp_c")} min={23} max={27} band={[24.6, 25.4]} decimals={2} history={hist("temp_c")} />
-            <Gauge label="Off-gas O₂" unit="%" value={valueOf(tick, "o2_offgas_pct")} min={12} max={22} band={[18.5, 20.5]} history={hist("o2_offgas_pct")} />
-          </div>
-          <div className="mt-2 grid grid-cols-3 gap-1.5">
-            <Quick label="Sugar feed" value={`${fmtInt(valueOf(tick, "feed"))} L/h`} />
-            <Quick label="Aeration" value={`${fmtInt(valueOf(tick, "aeration"))} m³/min`} />
-            <Quick label="Agitation" value={`${fmtInt(valueOf(tick, "rpm"))} rpm`} />
-          </div>
-        </FloatingPanel>
-      )}
-      {show("forecast") && (
-        <FloatingPanel
-          title="Yield forecast"
-          icon={<TrendingUp size={15} />}
-          position={{ right: 16, top: 16 }}
-          bounds={stage}
-          floating={floating}
-          width={300}
-          onClose={hide("forecast")}
-          resetKey={resetKey}
-        >
-          {f ? (
-            <>
-              <div className="flex items-baseline justify-between">
-                <div>
-                  <span className="display-num text-2xl font-semibold">{fmtInt(f.p50)}</span>
-                  <span className="ml-1 text-sm text-text-muted">{f.unit} final yield</span>
-                </div>
-                <ProvenanceChip provenance={f.provenance} source="model estimate on held-out IndPenSim data; 80% interval" />
-              </div>
-              <div className="text-xs text-text-secondary">
-                likely {fmtInt(f.p10)}–{fmtInt(f.p90)} · {Math.round(f.vs_golden_pct)}% of a typical batch
-              </div>
-              <div className="mt-2">
-                <ForecastFan reactorId={r.id} ticks={r.history} />
-              </div>
-            </>
-          ) : (
-            <p className="text-sm text-text-muted">The forecast starts once about 8% of the batch has run.</p>
-          )}
-        </FloatingPanel>
-      )}
-      {show("energy") && (
-        <FloatingPanel
-          title={oxygenAlarm ? "Get the oxygen back" : "Oxygen transfer vs energy"}
-          icon={<Zap size={15} />}
-          position={{ right: 16, bottom: 84 }}
-          bounds={stage}
-          floating={floating}
-          width={330}
-          onClose={hide("energy")}
-          resetKey={resetKey}
-          defaultOpen={!floating || roomy}
-        >
-          <ErrorBoundary title="Energy panel unavailable">
-            <EnergyPanel reactorId={r.id} tick={tick} mode={oxygenAlarm ? "rescue" : "energy"} />
-          </ErrorBoundary>
-        </FloatingPanel>
-      )}
-    </>
-  );
+  const open = (d: Detail) => {
+    setDetail((cur) => (cur === d ? null : d));
+    requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }));
+  };
 
   return (
-    <div className="h-full overflow-y-auto xl:overflow-hidden">
-      <div className="flex flex-col gap-4 p-4 xl:h-full xl:flex-row">
-        {/* Stage: the twin is the hero; information floats over it */}
+    <div className="h-full overflow-y-auto">
+      <div className="flex flex-col gap-4 p-4 xl:flex-row xl:items-start">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <div ref={stage} className="relative h-[460px] overflow-hidden rounded-card border border-border-subtle md:h-[560px] xl:h-auto xl:flex-1">
+          {/* Header strip: identity, state, one sentence, the one action */}
+          <section className="flex flex-wrap items-center gap-4 rounded-card border border-border-subtle bg-bg-surface px-4 py-3">
+            <Link
+              to={`/app/plants/${plantId || r.plantId}`}
+              aria-label="Back to plant"
+              className="rounded-control p-1.5 text-text-secondary hover:bg-bg-elevated hover:text-text-primary"
+            >
+              <ArrowLeft size={18} />
+            </Link>
+            <HealthRing score={h?.score ?? null} state={h?.state ?? r.state} size={52} />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <h1 className="display-num text-2xl font-semibold tracking-tight">{r.id}</h1>
+                <StatusPill state={r.state} />
+                <span className="text-xs text-text-muted">
+                  Batch {r.batchId} · {strategyLabel(r.strategy)} · {fmt(tick?.t_h, 1)} h
+                </span>
+              </div>
+              <p className="mt-0.5 text-sm">
+                <span className="font-semibold" style={{ color: r.state === "normal" ? undefined : stateVar[r.state] }}>
+                  {story.headline}.
+                </span>{" "}
+                <span className="text-text-secondary">{story.detail}</span>
+              </p>
+            </div>
+            {r.state === "alarm" && !r.acknowledged ? (
+              <button
+                onClick={() => {
+                  patch(r.id, { acknowledged: true });
+                  void api.ack(r.id);
+                }}
+                className="rounded-control px-4 py-2 text-sm font-semibold text-white"
+                style={{ background: "var(--color-state-alarm)" }}
+              >
+                Acknowledge alarm
+              </button>
+            ) : r.acknowledged && r.state !== "normal" ? (
+              <span className="flex items-center gap-1.5 text-xs text-text-secondary">
+                <CheckCircle2 size={14} /> Acknowledged
+              </span>
+            ) : null}
+          </section>
+
+          {/* Hero stage: nothing sits on the reactor */}
+          <section className="relative h-[46vh] min-h-[340px] overflow-hidden rounded-card border border-border-subtle xl:h-[52vh]">
             <ErrorBoundary title="3D view unavailable">
               <ReactorScene tick={tick} state={r.state} />
             </ErrorBoundary>
-            {floating && statusCard}
-            {floating && panels}
-            {floating && (
-              <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2">
-                <button onClick={() => setMenu((m) => !m)} className="glass flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium" aria-expanded={menu}>
-                  <Layers size={14} /> Layers
-                </button>
-                {menu && (
-                  <div className="glass absolute left-1/2 mt-2 w-52 -translate-x-1/2 rounded-card p-1.5">
-                    {LAYERS.map((l) => (
-                      <label key={l.id} className="flex cursor-pointer items-center gap-2 rounded-control px-2 py-1.5 text-sm hover:bg-bg-elevated">
-                        <input
-                          type="checkbox"
-                          checked={layers[l.id]}
-                          onChange={(e) => setLayers((s) => ({ ...s, [l.id]: e.target.checked }))}
-                          className="accent-[var(--color-accent-500)]"
-                        />
-                        {l.label}
-                      </label>
-                    ))}
-                    <button
-                      onClick={() => {
-                        setLayers({ vitals: true, forecast: true, energy: true });
-                        setResetKey((k) => k + 1);
-                        setMenu(false);
-                      }}
-                      className="mt-1 flex w-full items-center gap-2 rounded-control px-2 py-1.5 text-sm text-text-secondary hover:bg-bg-elevated"
-                    >
-                      <RotateCcw size={13} /> Reset layout
-                    </button>
+            <span className="pointer-events-none absolute bottom-3 right-4 text-[11px] text-text-muted">Drag to orbit · hover parts for live values</span>
+          </section>
+
+          {/* Instrument dock: live tiles, each opens its detail view below */}
+          <section className="space-y-3">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-5">
+              <DockTile
+                label="Dissolved oxygen"
+                value={fmt(doPct, 0)}
+                unit="% sat"
+                note={doPct !== null && doPct < 35 ? "below the safety target" : "oxygen supply is healthy"}
+                tone={hot("do_pct") ?? (doPct !== null && doPct < 25 ? "var(--color-state-alarm)" : undefined)}
+                history={hist("do_pct")}
+                active={detail === "process"}
+                onClick={() => open("process")}
+              />
+              <DockTile
+                label="pH"
+                value={fmt(valueOf(tick, "ph"), 2)}
+                note="held by base dosing"
+                tone={hot("ph")}
+                history={hist("ph")}
+                active={detail === "process"}
+                onClick={() => open("process")}
+              />
+              <DockTile
+                label="Temperature"
+                value={fmt(valueOf(tick, "temp_c"), 2)}
+                unit="°C"
+                note="jacket cooling"
+                tone={hot("temp_c")}
+                history={hist("temp_c")}
+                active={detail === "process"}
+                onClick={() => open("process")}
+              />
+              <DockTile
+                label="Final yield forecast"
+                value={f ? fmtInt(f.p50) : "—"}
+                unit={f?.unit}
+                note={f ? `${Math.round(f.vs_golden_pct)}% of a typical batch` : "starts at ~8% of the batch"}
+                history={r.history.slice(-90).map((t) => t.forecast?.p50 ?? NaN)}
+                active={detail === "forecast"}
+                onClick={() => open("forecast")}
+              />
+              <DockTile
+                label={oxygenAlarm ? "Oxygen rescue" : "Agitation + aeration"}
+                value={fmtInt(valueOf(tick, "power_kw"))}
+                unit="kW"
+                note={oxygenAlarm ? "see the rescue setting" : "tap for the energy-saving setting"}
+                history={hist("power_kw")}
+                active={detail === "energy"}
+                onClick={() => open("energy")}
+              />
+            </div>
+
+            <AnimatePresence initial={false}>
+              {detail && (
+                <motion.div
+                  ref={detailRef}
+                  key="detail"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
+                  className="overflow-hidden"
+                >
+                  <div className="rounded-card border border-border-subtle bg-bg-surface p-5">
+                    <div className="mb-4 flex items-center gap-1 rounded-control bg-bg-inset p-1 text-sm" role="tablist">
+                      {(
+                        [
+                          ["process", "Process"],
+                          ["forecast", "Yield forecast"],
+                          ["energy", oxygenAlarm ? "Oxygen rescue" : "Energy vs oxygen"],
+                        ] as [Detail, string][]
+                      ).map(([d, label]) => (
+                        <button
+                          key={d}
+                          role="tab"
+                          aria-selected={detail === d}
+                          onClick={() => setDetail(d)}
+                          className={`flex-1 rounded-[5px] px-3 py-1.5 font-medium ${detail === d ? "bg-bg-surface text-text-primary shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {detail === "process" && (
+                      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_260px]">
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                          <Gauge label="Dissolved oxygen" unit="% sat" value={doPct} min={0} max={120} band={[45, 110]} warnBelow={25} history={hist("do_pct")} />
+                          <Gauge label="pH" unit="" value={valueOf(tick, "ph")} min={5.8} max={7.2} band={[6.3, 6.7]} decimals={2} history={hist("ph")} />
+                          <Gauge label="Temperature" unit="°C" value={valueOf(tick, "temp_c")} min={23} max={27} band={[24.6, 25.4]} decimals={2} history={hist("temp_c")} />
+                          <Gauge label="Off-gas O₂" unit="%" value={valueOf(tick, "o2_offgas_pct")} min={12} max={22} band={[18.5, 20.5]} history={hist("o2_offgas_pct")} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 self-center">
+                          <Quick label="Sugar feed" value={`${fmtInt(valueOf(tick, "feed"))} L/h`} />
+                          <Quick label="Aeration" value={`${fmtInt(valueOf(tick, "aeration"))} m³/min`} />
+                          <Quick label="Agitation" value={`${fmtInt(valueOf(tick, "rpm"))} rpm`} />
+                          <Quick label="Oxygen uptake" value={`${fmt(valueOf(tick, "our"), 2)} mg/L/h`} />
+                        </div>
+                      </div>
+                    )}
+
+                    {detail === "forecast" &&
+                      (f ? (
+                        <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="display-num text-4xl font-semibold">{fmtInt(f.p50)}</span>
+                              <span className="text-sm text-text-muted">{f.unit}</span>
+                              <ProvenanceChip provenance={f.provenance} source="model estimate on held-out IndPenSim data; 80% interval" />
+                            </div>
+                            <p className="mt-1 text-sm text-text-secondary">
+                              Likely between {fmtInt(f.p10)} and {fmtInt(f.p90)} {f.unit}, {Math.round(f.vs_golden_pct)}% of a typical batch.
+                              The band narrows as the batch matures and widens once a fault is flagged.
+                            </p>
+                          </div>
+                          <ForecastFan reactorId={r.id} ticks={r.history} height={170} />
+                        </div>
+                      ) : (
+                        <p className="text-sm text-text-muted">The forecast starts once about 8% of the batch has run.</p>
+                      ))}
+
+                    {detail === "energy" && (
+                      <ErrorBoundary title="Energy panel unavailable">
+                        <EnergyPanel reactorId={r.id} tick={tick} mode={oxygenAlarm ? "rescue" : "energy"} layout="row" />
+                      </ErrorBoundary>
+                    )}
                   </div>
-                )}
-              </div>
-            )}
-            {floating && (
-              <div className="glass absolute inset-x-4 bottom-4 z-10 rounded-card px-4 py-2.5">
-                <TimelineScrubber r={r} />
-              </div>
-            )}
-          </div>
-          {!floating && (
-            <>
-              {statusCard}
-              <div className="rounded-card border border-border-subtle bg-bg-surface px-4 py-3">
-                <TimelineScrubber r={r} />
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">{panels}</div>
-            </>
-          )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="rounded-card border border-border-subtle bg-bg-surface px-4 py-3">
+              <TimelineScrubber r={r} />
+            </div>
+          </section>
         </div>
 
         {/* Copilot: the product's voice, visually set apart */}
-        <aside className="copilot-rail flex min-h-[560px] flex-col overflow-hidden rounded-card border xl:min-h-0 xl:w-[380px] xl:shrink-0">
+        <aside className="copilot-rail flex min-h-[600px] flex-col overflow-hidden rounded-card border xl:sticky xl:top-4 xl:h-[calc(100vh-56px-32px)] xl:w-[380px] xl:shrink-0">
           <div className="flex items-center gap-2.5 px-5 pb-3 pt-4">
             <span className="flex h-8 w-8 items-center justify-center rounded-control" style={{ background: "var(--color-accent-500)", color: "var(--color-bg-base)" }}>
               <Sparkles size={16} />

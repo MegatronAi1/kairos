@@ -140,7 +140,7 @@ export function ForecastFan({ reactorId, ticks, height = 150 }: { reactorId: str
   const pts = [...hist, ...live];
   if (q.isLoading) return <Skeleton className="h-28 w-full" />;
   if (pts.length < 3) return <p className="text-sm text-text-muted">The fan fills in as the batch runs.</p>;
-  const W = 290;
+  const W = height > 150 ? 640 : 290;
   const H = height;
   const pad = { l: 2, r: 52, t: 8, b: 8 };
   const last = pts[pts.length - 1]!;
@@ -215,7 +215,17 @@ export function PowerDonut({ agitator, compressor, size = 92 }: { agitator: numb
 }
 
 /** Energy vs oxygen: current power split, and Kairos's cheaper setting that keeps oxygen safe. */
-export function EnergyPanel({ reactorId, tick, mode }: { reactorId: string; tick: TickEvent | null; mode: "energy" | "rescue" }) {
+export function EnergyPanel({
+  reactorId,
+  tick,
+  mode,
+  layout = "stack",
+}: {
+  reactorId: string;
+  tick: TickEvent | null;
+  mode: "energy" | "rescue";
+  layout?: "stack" | "row";
+}) {
   const bucket = tick ? Math.floor(tick.t_h / 4) : 0; // refresh every 4 batch-hours
   const q = useQuery({
     queryKey: ["recommendation", reactorId, mode, bucket],
@@ -225,7 +235,7 @@ export function EnergyPanel({ reactorId, tick, mode }: { reactorId: string; tick
   });
   const rec = q.data;
   return (
-    <div className="space-y-3">
+    <div className={layout === "row" ? "grid items-start gap-6 md:grid-cols-[minmax(0,240px)_minmax(0,1fr)]" : "space-y-3"}>
       <PowerDonut agitator={tick?.derived.agitator_kw ?? null} compressor={tick?.derived.compressor_kw ?? null} />
       {q.isLoading ? (
         <Skeleton className="h-20" />
