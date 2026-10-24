@@ -75,7 +75,7 @@ def create_app(settings: Settings | None = None, *, autostart: bool = True) -> F
     app = FastAPI(title="Kairos API", version=routes_meta.VERSION, lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins,
+        allow_origins=settings.cors_origin_list,
         allow_methods=["*"],
         allow_headers=["*"],
     )
