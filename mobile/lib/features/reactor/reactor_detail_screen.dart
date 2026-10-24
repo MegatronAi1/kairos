@@ -104,6 +104,7 @@ class ReactorDetailScreen extends ConsumerWidget {
                 else
                   MetricReadout(
                     label: 'Final penicillin (${f.vsGoldenPct.round()}% of typical)',
+                    decimals: unitDecimals(f.unit),
                     value: f.p50,
                     unit: f.unit,
                     range: (f.p10, f.p90),

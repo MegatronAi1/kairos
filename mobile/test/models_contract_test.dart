@@ -12,7 +12,7 @@ void main() {
     expect(e.reactorId, 'R2');
     expect(e.sensors['do_pct'], 31.2);
     expect(e.value('power_kw'), 141.0);
-    expect(e.forecast!.p10, 24.0);
+    expect(e.forecast!.p10, 1989.0);
     expect(e.forecast!.provenance, Provenance.synthetic);
     expect(e.health!.state, HealthState.watch);
     expect(e.health!.topContributors.single.low, isTrue);

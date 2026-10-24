@@ -1,5 +1,5 @@
 {"type":"tick","reactor_id":"R2","ts":1792828820865,"t_h":63.4,"progress":0.2757,"batch_id":91,
  "sensors":{"do_pct":31.2,"do_mgl":4.9,"ph":6.48,"temp_c":25.1,"rpm":100.0,"aeration":60.0,"feed":80.0,"pressure_bar":0.9,"co2_offgas_pct":0.8,"o2_offgas_pct":19.9,"volume_l":72000.0,"base_lph":30.1,"acid_lph":0.0,"cooling_lph":120.0,"paa_lph":5.0,"oil_lph":22.0},
  "derived":{"our":0.99,"cer":0.018,"kla":369.8,"otr":1609.1,"power_kw":141.0,"agitator_kw":43.5,"compressor_kw":97.5,"kwh_cum":8930.0},
- "forecast":{"p50":27.1,"p10":24.0,"p90":29.8,"unit":"g/L","vs_golden_pct":88.0,"confidence":"medium","provenance":"synthetic"},
+ "forecast":{"p50":2706.0,"p10":1989.0,"p90":3423.0,"unit":"kg","vs_golden_pct":88.0,"confidence":"medium","provenance":"synthetic"},
  "health":{"score":64.0,"state":"watch","t2":12.3,"t2_limit":10.1,"spe":4.2,"spe_limit":6.0,"top_contributors":[{"var":"do_pct","pct":46.0,"dir":"low"}],"since_h":61.2}}

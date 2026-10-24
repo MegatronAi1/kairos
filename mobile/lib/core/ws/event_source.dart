@@ -164,7 +164,7 @@ class MockEventSource implements EventSource {
       final doPct = 62 - drift * 2.2 + _noise(1.5);
       final score = (96 - drift * 4.5 + _noise(2)).clamp(5, 100).toDouble();
       final state = score < 45 ? HealthState.alarm : (score < 70 ? HealthState.watch : HealthState.normal);
-      final p50 = 31 - drift * 0.35 + (id == 'R3' ? -4 : 0);
+      final p50 = 3300.0 - drift * 45 + (id == 'R3' ? -500 : 0);
       final progress = (_t / 230).clamp(0, 1).toDouble();
       final contributors = drift > 0
           ? const [
@@ -198,10 +198,10 @@ class MockEventSource implements EventSource {
             },
             forecast: Forecast(
               p50: p50,
-              p10: p50 - 3,
-              p90: p50 + 2.7,
-              unit: 'g/L',
-              vsGoldenPct: 100 * p50 / 31,
+              p10: p50 - 720,
+              p90: p50 + 720,
+              unit: 'kg',
+              vsGoldenPct: 100 * p50 / 3267,
               confidence: Confidence.medium,
               provenance: Provenance.synthetic,
             ),

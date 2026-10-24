@@ -23,3 +23,6 @@ const sensorMeta = <String, ({String label, String unit, int decimals})>{
 };
 
 String sensorLabel(String key) => sensorMeta[key]?.label ?? key.replaceAll('_', ' ');
+
+/// Decimals for a forecast unit: whole kilograms, one decimal for concentrations.
+int unitDecimals(String unit) => unit == 'kg' ? 0 : 1;

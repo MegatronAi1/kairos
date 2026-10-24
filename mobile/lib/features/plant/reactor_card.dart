@@ -71,10 +71,12 @@ class ReactorCard extends StatelessWidget {
                           Expanded(
                             child: _Stat(
                               label: 'Final yield forecast',
-                              value: f == null ? '—' : '${fmt(f.p50)} ${f.unit}',
+                              value: f == null
+                                  ? '—'
+                                  : '${fmt(f.p50, decimals: unitDecimals(f.unit))} ${f.unit}',
                               sub: f == null
                                   ? 'model loading'
-                                  : '${fmt(f.p10)} to ${fmt(f.p90)} · ${f.vsGoldenPct.round()}% of typical',
+                                  : '${fmt(f.p10, decimals: unitDecimals(f.unit))} to ${fmt(f.p90, decimals: unitDecimals(f.unit))} · ${f.vsGoldenPct.round()}% of typical',
                             ),
                           ),
                           _Stat(
