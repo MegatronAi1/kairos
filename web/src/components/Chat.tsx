@@ -79,13 +79,14 @@ export function Chat({ reactorId, suggestions }: { reactorId?: string; suggestio
     <div className="flex h-full min-h-0 flex-col">
       <div ref={list} className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1" aria-live="polite">
         {messages.length === 0 && (
-          <div className="space-y-2">
-            <p className="text-sm text-text-muted">Ask about drift, drivers, forecasts or model accuracy.</p>
+          <div className="space-y-1.5">
+            <p className="text-xs text-text-muted">Ask about drift, drivers, forecasts or model accuracy.</p>
             {suggestions.map((s) => (
               <button
                 key={s}
                 onClick={() => send(s)}
-                className="block w-full rounded-control border border-border-subtle px-3 py-2 text-left text-sm text-text-secondary hover:border-border-strong hover:text-text-primary"
+                className="block w-full truncate rounded-full border border-border-subtle px-3 py-1.5 text-left text-xs text-text-secondary hover:border-accent-500 hover:text-text-primary"
+                title={s}
               >
                 {s}
               </button>

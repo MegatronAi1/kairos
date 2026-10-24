@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useState } from "react";
 
 import { ConfidenceMeter, EvidenceChip, ProvenanceChip, Tip } from "@/components/primitives";
 import type { HealthState, InsightEvent, Provenance } from "@/lib/api/types";
@@ -76,16 +77,22 @@ export function MetricReadout({
   );
 }
 
+/** Compact alarm card for the copilot rail: what happened, what to do, how long is
+ * left. Summary, expected effect and evidence open on demand. */
 export function InsightCardView({
   insight,
   state,
+  ponrLeftH = null,
   onSimulate,
 }: {
   insight: InsightEvent;
   state: HealthState;
+  ponrLeftH?: number | null;
   onSimulate?: () => void;
 }) {
   const c = insight.card;
+  const [more, setMore] = useState(false);
+  const color = stateVar[state];
   return (
     <motion.article
       key={`${insight.ts}-${insight.source}`}
@@ -93,44 +100,57 @@ export function InsightCardView({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
       className="overflow-hidden rounded-card border border-border-subtle bg-bg-surface"
-      style={{ borderLeft: `3px solid ${stateVar[state]}` }}
+      style={{ borderLeft: `3px solid ${color}` }}
     >
-      <div className="p-4">
-        <div className="flex items-center justify-between">
-          <span className="eyebrow">{insight.source === "agent" ? "Kairos copilot" : "Kairos rules"}</span>
-          <ConfidenceMeter confidence={c.confidence} />
-        </div>
-        <h3 className="mt-2 text-lg font-medium">{c.title}</h3>
-        <p className="mt-1 text-text-secondary">{c.summary}</p>
-        <div className="mt-3 rounded-control p-3" style={{ background: "var(--color-accent-glow)" }}>
-          <div className="eyebrow" style={{ color: "var(--color-accent-500)" }}>
-            Do this
-          </div>
-          <p className="mt-0.5 font-medium">{c.action}</p>
-          {c.expected_effect && (
-            <p className="mt-1 text-sm text-text-secondary">
-              Expected: {c.expected_effect}
-              {/estimate/i.test(c.expected_effect) ? "" : " (model estimate)"}
-            </p>
+      <div className="space-y-2 px-3.5 py-3">
+        <div className="flex items-start gap-2">
+          <h3 className="min-w-0 flex-1 text-sm font-semibold leading-snug">{c.title}</h3>
+          {ponrLeftH !== null && (
+            <Tip content={PONR_TOOLTIP}>
+              <span
+                tabIndex={0}
+                className="num shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                style={{ color, background: `color-mix(in srgb, ${color} 14%, transparent)` }}
+              >
+                {ponrLeftH > 0 ? `${fmtHours(ponrLeftH)} left` : "PONR passed"}
+              </span>
+            </Tip>
           )}
         </div>
-        {onSimulate && state === "alarm" && (
-          <button
-            onClick={onSimulate}
-            className="mt-3 w-full rounded-control border px-3 py-2 text-sm font-semibold"
-            style={{ borderColor: "var(--color-accent-500)", color: "var(--color-accent-500)" }}
-          >
-            Simulate the fix: see the yield it saves
-          </button>
-        )}
-        {c.evidence.length > 0 && (
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            <span className="text-xs text-text-muted">Based on</span>
-            {c.evidence.map((e) => (
-              <EvidenceChip key={e} source={e} />
-            ))}
+        <p className="text-[13px] leading-snug">
+          <span className="font-semibold" style={{ color: "var(--color-accent-500)" }}>
+            Do this:{" "}
+          </span>
+          {c.action}
+        </p>
+        {more && (
+          <div className="space-y-2 border-t border-border-subtle pt-2 text-xs text-text-secondary">
+            <p>{c.summary}</p>
+            {c.expected_effect && (
+              <p>
+                Expected: {c.expected_effect}
+                {/estimate/i.test(c.expected_effect) ? "" : " (model estimate)"}
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <ConfidenceMeter confidence={c.confidence} />
+              {c.evidence.map((e) => (
+                <EvidenceChip key={e} source={e} />
+              ))}
+            </div>
           </div>
         )}
+        <div className="flex items-center gap-3 pt-0.5 text-xs">
+          {onSimulate && state === "alarm" && (
+            <button onClick={onSimulate} className="font-semibold hover:underline" style={{ color: "var(--color-accent-500)" }}>
+              Simulate the fix
+            </button>
+          )}
+          <button onClick={() => setMore((m) => !m)} className="text-text-muted hover:text-text-primary" aria-expanded={more}>
+            {more ? "Less" : "Why and evidence"}
+          </button>
+          <span className="ml-auto text-[11px] text-text-muted">{insight.source === "agent" ? "Copilot" : "Rules"}</span>
+        </div>
       </div>
     </motion.article>
   );

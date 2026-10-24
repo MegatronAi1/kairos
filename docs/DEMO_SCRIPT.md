@@ -4,7 +4,7 @@ Setup: laptop browser on the hosted URL (or `docker compose up` locally), phone 
 
 1. **Landing (15 s).** "Every batch has a decisive moment. Kairos finds it." Point at the four KPI cards: real numbers on batches the models never saw.
 2. **Sign in (5 s).** Click the operator demo account.
-3. **Operations map (20 s).** "Aurora Bioproteins, a fictional company running 15 alternative-protein plants in the cities that host Hack the Fork, from Sonipat to Paris, Nairobi and Davis." A plant turns red and the alarm toast slides in top right. [Phone buzzes on the table.]
+3. **Operations map (20 s).** "Aurora Bioproteins, a fictional company running seven alternative-protein plants across four continents, in cities that host Hack the Fork: Pune, Paris, Lagos, Nairobi, Manila, Providence and Davis." A plant turns red and the alarm toast slides in top right. [Phone buzzes on the table.]
 4. **Phone (15 s).** Show the full-screen alarm: "Oxygen transfer dropping", the countdown (about 8 h to the point of no return), the action. Tap Acknowledge; the console shows "Acknowledged".
 5. **Plant -> R2 (40 s).** The 3D reactor: oxygen ring and broth colour shifting. Open the dissolved-oxygen tile, then the forecast tile: the yield range widens and drops. Copilot card: cause, one action, expected effect, evidence chips.
 6. **Simulate the fix (30 s).** Click "Simulate the fix": fix now keeps about 3,400 kg; wait past the point of no return and it falls; do nothing is about 2,500 and dropping. "Model estimate from healthy analog batches."

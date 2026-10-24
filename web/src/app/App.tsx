@@ -23,7 +23,7 @@ const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30
 /** Old links (/reactor/PUN-R2) keep working. */
 function LegacyReactor() {
   const { id = "" } = useParams();
-  const plant = { PUN: "pune", BLR: "bengaluru", RTM: "rotterdam", SIN: "singapore" }[id.split("-")[0] ?? ""];
+  const plant = { PUN: "pune", PAR: "paris", LOS: "lagos", NBO: "nairobi", MNL: "manila", PVD: "providence", DAV: "davis" }[id.split("-")[0] ?? ""];
   return <Navigate to={plant ? `/app/plants/${plant}/reactors/${id}` : "/app"} replace />;
 }
 

@@ -7,7 +7,7 @@ import { Link, useParams } from "react-router-dom";
 import { Chat } from "@/components/Chat";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { EmptyState, ProvenanceChip, Skeleton, StatusPill } from "@/components/primitives";
-import { InsightCardView, PonrCountdown, Sparkline } from "@/components/readouts";
+import { InsightCardView, Sparkline } from "@/components/readouts";
 import { TimelineScrubber } from "@/components/Timeline";
 import { EnergyPanel, ForecastFan, Gauge, HealthRing, WhatIfView } from "@/components/viz";
 import { api } from "@/lib/api/client";
@@ -322,17 +322,13 @@ export default function ReactorPage() {
               <p className="text-[11px] text-text-muted">Claude, grounded in Kairos models</p>
             </div>
           </div>
-          <div className="max-h-[55%] shrink-0 space-y-4 overflow-y-auto px-5 pb-4">
-            {ponrLeft !== null && ponr !== null && <PonrCountdown remainingH={ponrLeft} totalH={ponr} size={140} />}
+          <div className="max-h-[45%] shrink-0 overflow-y-auto px-5 pb-3">
             {r.insight && r.state !== "normal" ? (
-              <InsightCardView insight={r.insight} state={r.state} onSimulate={() => open("whatif")} />
+              <InsightCardView insight={r.insight} state={r.state} ponrLeftH={ponrLeft} onSimulate={() => open("whatif")} />
             ) : (
-              <div className="rounded-card border border-border-subtle bg-bg-surface p-4">
-                <div className="text-sm font-semibold">All clear</div>
-                <p className="mt-1 text-sm text-text-secondary">
-                  Nothing needs your attention. Kairos compares every signal with how healthy batches looked at this same hour, and
-                  will page the operator the moment that changes.
-                </p>
+              <div className="flex items-center gap-2 rounded-control border border-border-subtle bg-bg-surface px-3 py-2 text-xs text-text-secondary">
+                <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--color-state-healthy)" }} />
+                All clear: every signal matches healthy batches at this hour.
               </div>
             )}
           </div>

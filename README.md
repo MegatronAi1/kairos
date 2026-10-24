@@ -6,7 +6,7 @@ Built at Hack the Fork 2026 (NIFTEM-K), problem statement 3(a): process intellig
 
 - Live demo: see the URL in the submission form (CloudFront, us-east-1)
 - Demo accounts: `operator@aurora.demo` / `kairos-demo`, `manager@aurora.demo` / `kairos-demo`
-- The demo company, Aurora Bioproteins, and its 15 plants (in the Hack the Fork 2026-27 host cities) are fictional. Replays loop; **Simulate alarm** (top bar) replays a real fault batch on demand. Every reactor replays a held-out batch of the IndPenSim industrial fermentation benchmark (synthetic data), so all forecasts and alarms are real model outputs on data the models never saw.
+- The demo company, Aurora Bioproteins, and its 7 plants (one per region, in Hack the Fork 2026-27 host cities) are fictional. Replays loop; **Simulate alarm** (top bar) replays a real fault batch on demand. Every reactor replays a held-out batch of the IndPenSim industrial fermentation benchmark (synthetic data), so all forecasts and alarms are real model outputs on data the models never saw.
 
 ## Results (held-out batches, `make eval`)
 

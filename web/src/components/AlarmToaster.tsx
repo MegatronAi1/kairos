@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { BellOff, BellRing, Check, ChevronRight, Siren, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { api } from "@/lib/api/client";
 import { fmtHours, sensorLabel } from "@/lib/format";
@@ -33,7 +33,7 @@ function chime(): void {
   }
 }
 
-function ToastCard({ t }: { t: AlarmToast }) {
+function ToastCard({ t, compact = false }: { t: AlarmToast; compact?: boolean }) {
   const navigate = useNavigate();
   const dismiss = useToasts((s) => s.dismiss);
   const reduce = useReducedMotion();
@@ -58,6 +58,32 @@ function ToastCard({ t }: { t: AlarmToast }) {
       setAcking(false);
     }
   };
+
+  if (compact)
+    return (
+      <motion.div
+        layout
+        role="alert"
+        initial={reduce ? { opacity: 0 } : { opacity: 0, x: 40 }}
+        animate={reduce ? { opacity: 1 } : { opacity: 1, x: [40, -6, 3, 0] }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.45 }}
+        className="pointer-events-auto flex max-w-[min(420px,calc(100vw-32px))] items-center gap-2 rounded-full border bg-bg-elevated py-1 pl-2 pr-1 text-xs shadow-xl"
+        style={{ borderColor: "var(--color-state-alarm)" }}
+      >
+        <Siren size={14} className={`shrink-0 ${reduce ? "" : "animate-pulse"}`} style={{ color: "var(--color-state-alarm)" }} />
+        <span className="num shrink-0 font-semibold" style={{ color: "var(--color-state-alarm)" }}>
+          {t.reactorId}
+        </span>
+        <span className="min-w-0 truncate">{title}</span>
+        <button onClick={open} className="shrink-0 rounded-full bg-accent-500 px-2 py-0.5 font-medium text-bg-base hover:opacity-90">
+          Open
+        </button>
+        <button onClick={() => dismiss(t.key)} aria-label="Dismiss alert" className="shrink-0 rounded-full p-1 text-text-muted hover:text-text-primary">
+          <X size={13} />
+        </button>
+      </motion.div>
+    );
 
   return (
     <motion.div
@@ -121,13 +147,17 @@ function ToastCard({ t }: { t: AlarmToast }) {
 
 /** Top-right alarm stack, mounted once in the app shell so it shows on every screen. */
 export function AlarmToaster() {
-  const toasts = useToasts((s) => s.toasts);
+  const all = useToasts((s) => s.toasts);
+  const loc = useLocation();
+  // The reactor page already shows its own alarm: no toast over it.
+  const viewing = decodeURIComponent(loc.pathname.match(/\/reactors\/([^/]+)/)?.[1] ?? "");
+  const toasts = all.filter((t) => t.reactorId !== viewing);
   const muted = useToasts((s) => s.muted);
   const setMuted = useToasts((s) => s.setMuted);
   const seen = useRef(new Set<string>());
 
   useEffect(() => {
-    const fresh = toasts.filter((t) => !seen.current.has(t.key));
+    const fresh = all.filter((t) => !seen.current.has(t.key)); // sound even for the reactor on screen
     fresh.forEach((t) => seen.current.add(t.key));
     if (!fresh.some((t) => t.loud)) return;
     navigator.vibrate?.([180, 80, 180]);
@@ -139,11 +169,14 @@ export function AlarmToaster() {
       clearTimeout(restore);
       document.title = prev;
     };
-  }, [toasts, muted]);
+  }, [all, muted]);
 
   return (
-    <div className="pointer-events-none fixed right-4 top-16 z-50 flex flex-col items-end gap-2" aria-live="assertive">
-      {toasts.length > 0 && (
+    <div
+      className={`pointer-events-none fixed right-4 z-50 flex flex-col items-end gap-2 ${viewing ? "bottom-4 xl:bottom-auto xl:right-[440px] xl:top-[206px]" : "top-16"}`}
+      aria-live="assertive"
+    >
+      {toasts.length > 0 && !viewing && (
         <button
           onClick={() => setMuted(!muted)}
           className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-border-subtle bg-bg-elevated px-2.5 py-1 text-[11px] text-text-secondary shadow hover:text-text-primary"
@@ -154,7 +187,7 @@ export function AlarmToaster() {
       )}
       <AnimatePresence initial={false}>
         {toasts.map((t) => (
-          <ToastCard key={t.key} t={t} />
+          <ToastCard key={t.key} t={t} compact={!!viewing} />
         ))}
       </AnimatePresence>
     </div>
